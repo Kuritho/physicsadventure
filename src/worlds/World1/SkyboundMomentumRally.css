@@ -1,0 +1,665 @@
+/* ============================================
+   FILE: src/worlds/World1/SkyboundMomentumRally.css
+   ============================================ */
+
+.skybound-momentum-rally {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e90ff 0%, #87ceeb 50%, #e0f7ff 100%);
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header */
+.quest-header {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  border: 3px solid #ff6b6b;
+}
+
+.quest-header h1 {
+  color: #ff6b6b;
+  margin: 10px 0;
+  font-size: 2em;
+  background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.finish-goal {
+  background: linear-gradient(135deg, #ffd93d, #ffb347);
+  padding: 15px;
+  border-radius: 15px;
+  font-weight: bold;
+  margin-top: 15px;
+  font-size: 1.1em;
+  color: #333;
+}
+
+.progress-percent {
+  font-size: 0.9em;
+  color: #666;
+  margin-left: 10px;
+}
+
+/* Main Layout */
+.quest-content {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .quest-content {
+    flex-direction: row;
+  }
+  
+  .control-panel {
+    flex: 1;
+    min-width: 350px;
+  }
+  
+  .simulation-panel {
+    flex: 2;
+  }
+}
+
+.control-panel,
+.simulation-panel {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced Race Track for 30m */
+.race-track {
+  position: relative;
+  height: 180px;
+  background: linear-gradient(90deg, #dfe6e9, #f5f6fa);
+  border-radius: 15px;
+  border: 4px solid #636e72;
+  margin-bottom: 20px;
+  overflow: visible;
+  min-width: 100%;
+  background-image: 
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 49px,
+      rgba(0,0,0,0.1) 49px,
+      rgba(0,0,0,0.1) 50px
+    );
+}
+
+.track-markers {
+  position: absolute;
+  top: -35px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 10px;
+  font-weight: bold;
+  font-size: 0.75em;
+  z-index: 2;
+}
+
+.track-marker {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid #b2bec3;
+}
+
+.finish-marker {
+  background: #ff6b6b;
+  color: white;
+  font-weight: bold;
+}
+
+.track-lane {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  padding-top: 50px;
+}
+
+/* Enhanced Balloon Rocket with Better Visibility */
+.balloon-rocket {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: all 0.1s ease-out;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  filter: drop-shadow(2px 2px 6px rgba(0, 0, 0, 0.3));
+  opacity: 1;
+}
+
+.balloon {
+  background: radial-gradient(circle at 30% 30%, #ff6b6b, #ff5252, #e84118);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  border: 3px solid #ff5252;
+  margin-bottom: -8px;
+  transition: all 0.3s ease;
+  box-shadow: 
+    inset -5px -5px 10px rgba(0, 0, 0, 0.2),
+    inset 5px 5px 10px rgba(255, 255, 255, 0.3);
+  min-width: 35px;
+  min-height: 45px;
+}
+
+.rocket-body {
+  width: 60px;
+  height: 18px;
+  background: linear-gradient(90deg, #2d3436, #636e72);
+  border-radius: 5px 5px 0 0;
+  position: relative;
+  border: 2px solid #2d3436;
+}
+
+.rocket-fins {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 45px;
+  height: 6px;
+  background: #636e72;
+  border-radius: 3px 3px 0 0;
+  border: 2px solid #2d3436;
+}
+
+.exhaust {
+  width: 40px;
+  height: 15px;
+  background: linear-gradient(to top, #ffd93d, #ff6b6b 60%, transparent 100%);
+  border-radius: 0 0 8px 8px;
+  margin: 0 auto;
+  opacity: 0.7;
+  transition: all 0.1s ease;
+}
+
+.exhaust-flame {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 0;
+  background: linear-gradient(to top, 
+    #ffd93d 0%, 
+    #ff6b6b 30%, 
+    #ff5252 60%, 
+    transparent 100%);
+  border-radius: 50% 50% 0 0;
+  transition: all 0.1s ease;
+  opacity: 0.8;
+}
+
+.balloon-rocket.launching .exhaust {
+  animation: exhaustFlame 0.3s infinite alternate;
+}
+
+.balloon-rocket.launching .exhaust-flame {
+  animation: flamePulse 0.2s infinite alternate;
+  height: 25px;
+}
+
+@keyframes exhaustFlame {
+  0% { 
+    opacity: 0.6;
+    background: linear-gradient(to top, #ffd93d, #ff6b6b 60%, transparent 100%);
+  }
+  100% { 
+    opacity: 1;
+    background: linear-gradient(to top, #ff6b6b, #ff5252 70%, transparent 100%);
+  }
+}
+
+@keyframes flamePulse {
+  0% { 
+    opacity: 0.7;
+    height: 20px;
+  }
+  100% { 
+    opacity: 1;
+    height: 30px;
+  }
+}
+
+.balloon-rocket.celebrate {
+  animation: celebrate 1s ease-in-out 3;
+}
+
+@keyframes celebrate {
+  0%, 100% { transform: translateY(-50%); }
+  25% { transform: translateY(-50%) rotate(-8deg); }
+  75% { transform: translateY(-50%) rotate(8deg); }
+}
+
+/* Distance Indicator */
+.distance-indicator {
+  position: absolute;
+  top: -25px;
+  background: #4ecdc4;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 10px;
+  font-size: 0.8em;
+  font-weight: bold;
+  transform: translateX(-50%);
+  z-index: 5;
+  white-space: nowrap;
+}
+
+.distance-indicator::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #4ecdc4;
+}
+
+/* Flight Data & Physics Info */
+.flight-data {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.data-item {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 10px;
+  text-align: center;
+  border: 2px solid #e9ecef;
+}
+
+.data-item span {
+  display: block;
+  color: #666;
+  font-size: 0.8em;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.data-item strong {
+  color: #ff6b6b;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.physics-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.info-item {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  border: 2px solid #4ecdc4;
+  font-size: 0.85em;
+}
+
+.info-item span {
+  display: block;
+  color: #666;
+  margin-bottom: 4px;
+  font-size: 0.75em;
+}
+
+.info-item strong {
+  color: #4ecdc4;
+  font-size: 0.9em;
+}
+
+.info-item strong.success {
+  color: #00b894;
+}
+
+.info-item strong.warning {
+  color: #ff6b6b;
+}
+
+/* Controls Styling */
+.inflation-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.inflation-stat {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 10px;
+  text-align: center;
+  border: 2px solid #e9ecef;
+}
+
+.inflation-stat span {
+  display: block;
+  color: #666;
+  font-size: 0.8em;
+  margin-bottom: 4px;
+}
+
+.inflation-stat strong {
+  color: #ff6b6b;
+  font-size: 1.2em;
+}
+
+.size-indicator {
+  margin-top: 15px;
+}
+
+.size-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 0.7em;
+  color: #666;
+}
+
+.size-bar {
+  width: 100%;
+  height: 16px;
+  background: #e9ecef;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.size-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ecdc4, #ffd93d, #ff6b6b);
+  border-radius: 8px;
+  transition: width 0.3s ease;
+}
+
+/* Buttons */
+.inflate-btn,
+.launch-btn,
+.reset-btn {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1em;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+}
+
+.inflate-btn {
+  background: linear-gradient(135deg, #ffd93d, #ffb347);
+  color: #333;
+}
+
+.launch-btn {
+  background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+  color: white;
+  animation: pulse 2s infinite;
+}
+
+.launch-btn.can-finish {
+  background: linear-gradient(135deg, #4ecdc4, #ff6b6b);
+  animation: pulse-success 1.5s infinite;
+}
+
+@keyframes pulse-success {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.reset-btn {
+  background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+  color: white;
+}
+
+.complete-quest-btn {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.2em;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 15px;
+  transition: all 0.3s ease;
+}
+
+.complete-quest-btn.enabled {
+  background: linear-gradient(135deg, #00b894, #4ecdc4);
+  color: white;
+  animation: pulse-success 2s infinite;
+}
+
+.complete-quest-btn.disabled {
+  background: linear-gradient(135deg, #b2bec3, #636e72);
+  color: #dfe6e9;
+  cursor: not-allowed;
+}
+
+/* Results Panel */
+.results-panel {
+  margin-top: 20px;
+}
+
+.result-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.result-card {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  border: 2px solid #e9ecef;
+}
+
+.result-card.success {
+  background: linear-gradient(135deg, #00b894, #4ecdc4);
+  color: white;
+  border-color: #00b894;
+}
+
+.result-card.warning {
+  background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+  border-color: #fdcb6e;
+}
+
+.result-label {
+  display: block;
+  font-size: 0.8em;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.result-card.success .result-label,
+.result-card.warning .result-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.result-value {
+  display: block;
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #ff6b6b;
+}
+
+.result-card.success .result-value,
+.result-card.warning .result-value {
+  color: white;
+}
+
+/* Assessment Section */
+.assessment-section {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.explanation-input {
+  margin-bottom: 20px;
+}
+
+.explanation-input label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: bold;
+  color: #333;
+}
+
+.explanation-input textarea {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 1em;
+  resize: vertical;
+  transition: border-color 0.3s ease;
+}
+
+.explanation-input textarea:focus {
+  outline: none;
+  border-color: #4ecdc4;
+}
+
+/* Back Button */
+.back-button {
+  background: linear-gradient(135deg, #a29bfe, #6c5ce7);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 15px;
+  transition: all 0.3s ease;
+}
+
+.back-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .skybound-momentum-rally {
+    padding: 10px;
+  }
+  
+  .quest-header h1 {
+    font-size: 1.6em;
+  }
+  
+  .track-markers {
+    font-size: 0.65em;
+  }
+  
+  .flight-data,
+  .physics-info,
+  .result-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .inflation-info {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Ensure rocket stays visible during animation */
+.balloon-rocket {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+/* Theory Section */
+.theory-section {
+  margin-bottom: 20px;
+}
+
+.goal-card {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  padding: 15px;
+  border-radius: 12px;
+  border: 2px solid #4ecdc4;
+}
+
+.physics-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.physics-stat {
+  text-align: center;
+  padding: 8px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.physics-stat span {
+  display: block;
+  font-size: 0.7em;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.physics-stat strong {
+  color: #4ecdc4;
+  font-size: 0.9em;
+}
+
+/* Control Group */
+.control-group {
+  margin-bottom: 20px;
+}
+
+.inflation-warning {
+  padding: 10px;
+  border-radius: 8px;
+  margin: 10px 0;
+  font-size: 0.9em;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* Button hover effects */
+.inflate-btn:hover:not(:disabled),
+.launch-btn:hover:not(:disabled),
+.reset-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.inflate-btn:disabled,
+.launch-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}

@@ -1,0 +1,1239 @@
+/* ============================================
+   FILE: src/worlds/World1/BounceOrBreak.css
+   ============================================ */
+
+.bounce-or-break {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #2D3748;
+}
+
+/* Header */
+.lab-header {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.lab-title {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.back-button {
+  background: #4C51BF;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  margin-bottom: 10px;
+}
+
+.back-button:hover {
+  background: #434190;
+  transform: translateY(-2px);
+}
+
+.lab-title h1 {
+  color: #4C51BF;
+  margin: 0;
+  font-size: 2.5em;
+  font-weight: 700;
+}
+
+.lab-subtitle {
+  color: #718096;
+  font-size: 1.1em;
+  margin: 5px 0 0 0;
+}
+
+.lab-context {
+  background: #F7FAFC;
+  border-radius: 12px;
+  padding: 15px;
+  border-left: 4px solid #4C51BF;
+}
+
+.context-card h3 {
+  color: #4C51BF;
+  margin: 0 0 8px 0;
+  font-size: 1.2em;
+}
+
+.context-card p {
+  margin: 0;
+  color: #4A5568;
+  line-height: 1.5;
+}
+
+/* Tabs */
+.lab-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 15px;
+  padding: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.tab-button {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #718096;
+  transition: all 0.3s ease;
+}
+
+.tab-button.active {
+  background: #4C51BF;
+  color: white;
+  box-shadow: 0 4px 12px rgba(76, 81, 191, 0.3);
+}
+
+.tab-button:hover:not(.active) {
+  background: #EDF2F7;
+  color: #4C51BF;
+}
+
+/* Main Content */
+.lab-content {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+/* Experiment Interface */
+.materials-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+  margin-bottom: 25px;
+}
+
+.materials-column h3 {
+  color: #4C51BF;
+  margin-bottom: 15px;
+  font-size: 1.3em;
+  border-bottom: 2px solid #E2E8F0;
+  padding-bottom: 8px;
+}
+
+.materials-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.material-card {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background: #F7FAFC;
+  border: 2px solid #E2E8F0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  gap: 15px;
+}
+
+.material-card:hover {
+  border-color: #4C51BF;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.material-card.selected {
+  border-color: #4C51BF;
+  background: #EBF4FF;
+  box-shadow: 0 4px 12px rgba(76, 81, 191, 0.2);
+}
+
+.material-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5em;
+  flex-shrink: 0;
+}
+
+.material-info {
+  flex: 1;
+}
+
+.material-name {
+  font-weight: 600;
+  color: #2D3748;
+  margin-bottom: 4px;
+}
+
+.material-class {
+  font-size: 0.85em;
+  color: #4C51BF;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.material-desc {
+  font-size: 0.8em;
+  color: #718096;
+  line-height: 1.3;
+}
+
+/* Experiment Controls */
+.experiment-controls {
+  background: #F7FAFC;
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 25px;
+  border: 2px solid #E2E8F0;
+}
+
+.control-group {
+  margin-bottom: 20px;
+}
+
+.control-group label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: #4A5568;
+  font-size: 1.1em;
+}
+
+.control-group input[type="range"] {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: #E2E8F0;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.control-group input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #4C51BF;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.height-info {
+  text-align: center;
+  margin-top: 8px;
+  color: #718096;
+  font-size: 0.9em;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 15px;
+}
+
+.experiment-button {
+  flex: 1;
+  padding: 15px 25px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.experiment-button.primary {
+  background: #4C51BF;
+  color: white;
+}
+
+.experiment-button.primary:hover:not(:disabled) {
+  background: #434190;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 81, 191, 0.4);
+}
+
+.experiment-button.primary:disabled {
+  background: #A0AEC0;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.experiment-button.secondary {
+  background: #718096;
+  color: white;
+}
+
+.experiment-button.secondary:hover:not(:disabled) {
+  background: #4A5568;
+  transform: translateY(-2px);
+}
+
+.experiment-button.secondary:disabled {
+  background: #CBD5E0;
+  cursor: not-allowed;
+}
+
+/* Simulation Area */
+.simulation-area {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+  align-items: start;
+}
+
+.drop-chamber {
+  position: relative;
+  height: 300px;
+  background: 
+    linear-gradient(to bottom, 
+      rgba(247, 250, 252, 0.8) 0%, 
+      rgba(237, 242, 247, 0.9) 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 19px,
+      rgba(76, 81, 191, 0.05) 19px,
+      rgba(76, 81, 191, 0.05) 20px
+    );
+  border-radius: 15px;
+  border: 3px solid #4C51BF;
+  overflow: hidden;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Add a subtle grid background for depth perception */
+.drop-chamber::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(76, 81, 191, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(76, 81, 191, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+}
+
+.height-scale {
+  position: absolute;
+  right: 20px;
+  top: 10px;
+  bottom: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  color: #4C51BF;
+  font-weight: 600;
+  font-size: 0.9em;
+  z-index: 2;
+}
+
+.scale-line {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, 
+    transparent 0%, 
+    #4C51BF 10%, 
+    #4C51BF 90%, 
+    transparent 100%);
+  z-index: 1;
+}
+
+/* Animation Stats */
+.animation-stats {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px 15px;
+  border-radius: 10px;
+  font-size: 0.8em;
+  color: #4A5568;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 5;
+  border: 1px solid #E2E8F0;
+}
+
+.animation-stats div {
+  margin: 3px 0;
+  font-weight: 500;
+}
+
+/* Test Ball with Enhanced 3D Effect */
+.test-ball {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 50px;
+  background: var(--ball-color, #718096);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5em;
+  z-index: 10;
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.25),
+    inset -5px -5px 10px rgba(0, 0, 0, 0.3),
+    inset 5px 5px 10px rgba(255, 255, 255, 0.2);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+/* Ball Loading State */
+.test-ball.loading {
+  animation: ballPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes ballPulse {
+  0%, 100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-50%) scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+/* Ball Impact Animation */
+.test-ball.impact {
+  animation: ballSquash 0.2s ease-out;
+}
+
+@keyframes ballSquash {
+  0% {
+    transform: translateX(-50%) scale(1, 1);
+  }
+  30% {
+    transform: translateX(-50%) scale(1.3, 0.7);
+  }
+  70% {
+    transform: translateX(-50%) scale(0.9, 1.1);
+  }
+  100% {
+    transform: translateX(-50%) scale(1, 1);
+  }
+}
+
+/* Ball Completion Animation */
+.test-ball.complete {
+  animation: successPulse 0.6s ease-in-out;
+}
+
+@keyframes successPulse {
+  0%, 100% {
+    transform: translateX(-50%) scale(1);
+    box-shadow: 
+      0 6px 20px rgba(0, 0, 0, 0.25),
+      inset -5px -5px 10px rgba(0, 0, 0, 0.3),
+      inset 5px 5px 10px rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.1);
+    box-shadow: 
+      0 10px 30px rgba(76, 81, 191, 0.4),
+      inset -3px -3px 6px rgba(0, 0, 0, 0.2),
+      inset 3px 3px 6px rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* Enhanced Surface Styling */
+.test-surface {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  background: linear-gradient(to top, 
+    rgba(0, 0, 0, 0.3) 0%, 
+    transparent 40%);
+  transition: all 0.3s ease;
+  z-index: 5;
+}
+
+/* Surface Impact Animation */
+.test-surface.impact-effect {
+  animation: surfaceImpact 0.3s ease-out;
+}
+
+@keyframes surfaceImpact {
+  0% {
+    transform: scaleY(1);
+    box-shadow: 0 0 0 rgba(76, 81, 191, 0);
+  }
+  30% {
+    transform: scaleY(0.95);
+    box-shadow: 0 0 25px rgba(76, 81, 191, 0.5);
+  }
+  100% {
+    transform: scaleY(1);
+    box-shadow: 0 0 0 rgba(76, 81, 191, 0);
+  }
+}
+
+.surface-label {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9em;
+  backdrop-filter: blur(5px);
+}
+
+/* Results Panel */
+.results-panel {
+  background: #F7FAFC;
+  border-radius: 15px;
+  padding: 20px;
+  border: 2px solid #E2E8F0;
+}
+
+.results-panel h3 {
+  color: #4C51BF;
+  margin-bottom: 15px;
+  font-size: 1.3em;
+}
+
+.collision-classification {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.collision-classification.highly-elastic,
+.collision-classification.nearly-elastic {
+  background: #C6F6D5;
+  border: 2px solid #48BB78;
+}
+
+.collision-classification.elastic {
+  background: #FEFCBF;
+  border: 2px solid #ECC94B;
+}
+
+.collision-classification.partially-inelastic {
+  background: #FEEBC8;
+  border: 2px solid #ED8936;
+}
+
+.collision-classification.inelastic,
+.collision-classification.highly-inelastic,
+.collision-classification.perfectly-inelastic {
+  background: #FED7D7;
+  border: 2px solid #F56565;
+}
+
+.classification-icon {
+  font-size: 2em;
+}
+
+.classification-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.classification-text strong {
+  font-size: 1.1em;
+}
+
+.classification-text span {
+  font-size: 0.9em;
+  color: #4A5568;
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.result-card {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  border: 1px solid #E2E8F0;
+  transition: transform 0.2s ease;
+}
+
+.result-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.result-label {
+  font-size: 0.8em;
+  color: #718096;
+  margin-bottom: 6px;
+}
+
+.result-value {
+  font-size: 1.2em;
+  font-weight: 600;
+  color: #2D3748;
+}
+
+.energy-conservation {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+}
+
+.energy-conservation h4 {
+  color: #4A5568;
+  margin-bottom: 12px;
+  font-size: 1.1em;
+}
+
+.energy-visualization {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.energy-bar {
+  background: #F7FAFC;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #E2E8F0;
+}
+
+.bar-label {
+  font-size: 0.8em;
+  color: #718096;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.bar-fill {
+  height: 24px;
+  background: linear-gradient(90deg, #4C51BF, #667eea);
+  border-radius: 6px;
+  transition: width 1s ease-in-out;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bar-fill.full {
+  width: 100% !important;
+  background: linear-gradient(90deg, #48BB78, #68D391);
+}
+
+.bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.3) 50%, 
+    transparent 100%);
+  border-radius: 6px;
+}
+
+.physics-explanation {
+  font-size: 0.85em;
+  color: #4A5568;
+  line-height: 1.4;
+  padding: 10px;
+  background: #EDF2F7;
+  border-radius: 6px;
+  border-left: 3px solid #4C51BF;
+}
+
+/* Data Log */
+.data-log h3 {
+  color: #4C51BF;
+  margin-bottom: 20px;
+  font-size: 1.3em;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 40px;
+  color: #718096;
+  background: #F7FAFC;
+  border-radius: 12px;
+  border: 2px dashed #CBD5E0;
+}
+
+.empty-state p {
+  margin: 8px 0;
+  font-size: 1.1em;
+}
+
+.data-table {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.8fr 1fr 1fr 1.2fr;
+  gap: 10px;
+  padding: 15px 20px;
+  background: #4C51BF;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.8fr 1fr 1fr 1.2fr;
+  gap: 10px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #E2E8F0;
+  font-size: 0.85em;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.table-row:hover {
+  background: #F7FAFC;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.collision-type {
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.8em;
+  font-weight: 600;
+  text-align: center;
+}
+
+.collision-type.highly-elastic,
+.collision-type.nearly-elastic {
+  background: #C6F6D5;
+  color: #22543D;
+}
+
+.collision-type.elastic {
+  background: #FEFCBF;
+  color: #744210;
+}
+
+.collision-type.partially-inelastic {
+  background: #FEEBC8;
+  color: #7B341E;
+}
+
+.collision-type.inelastic,
+.collision-type.highly-inelastic,
+.collision-type.perfectly-inelastic {
+  background: #FED7D7;
+  color: #742A2A;
+}
+
+/* Theory Guide */
+.theory-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.guide-section h3 {
+  color: #4C51BF;
+  margin-bottom: 15px;
+  font-size: 1.3em;
+  border-bottom: 2px solid #E2E8F0;
+  padding-bottom: 8px;
+}
+
+.guide-section ul {
+  padding-left: 20px;
+  color: #4A5568;
+  line-height: 1.6;
+}
+
+.guide-section li {
+  margin-bottom: 8px;
+  padding-left: 8px;
+}
+
+.classification-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.type-item {
+  padding: 18px;
+  border-radius: 10px;
+  border-left: 4px solid;
+  transition: transform 0.2s ease;
+}
+
+.type-item:hover {
+  transform: translateX(5px);
+}
+
+.type-item.elastic {
+  background: #F0FFF4;
+  border-left-color: #48BB78;
+}
+
+.type-item.inelastic {
+  background: #FFF5F5;
+  border-left-color: #F56565;
+}
+
+.type-item.partially-elastic {
+  background: #FFFAF0;
+  border-left-color: #ED8936;
+}
+
+.type-item p {
+  margin: 8px 0 0 0;
+  color: #718096;
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+
+.formulas {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.formula {
+  background: #F7FAFC;
+  padding: 18px;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+  transition: all 0.3s ease;
+}
+
+.formula:hover {
+  border-color: #4C51BF;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.formula code {
+  display: block;
+  background: #2D3748;
+  color: #E2E8F0;
+  padding: 12px;
+  border-radius: 8px;
+  margin: 10px 0 8px 0;
+  font-family: 'Courier New', monospace;
+  font-size: 1em;
+  font-weight: 500;
+}
+
+.formula p {
+  margin: 8px 0 0 0;
+  color: #718096;
+  font-size: 0.85em;
+  line-height: 1.4;
+}
+
+/* Assessment */
+.lab-assessment {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.assessment-progress {
+  margin-bottom: 25px;
+}
+
+.assessment-progress h3 {
+  color: #4C51BF;
+  margin-bottom: 15px;
+  font-size: 1.3em;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 16px;
+  background: #E2E8F0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4C51BF, #667eea);
+  border-radius: 8px;
+  transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.4) 50%, 
+    transparent 100%);
+  border-radius: 8px;
+}
+
+.assessment-progress p {
+  color: #4A5568;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.progress-tip {
+  background: #EBF4FF;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border-left: 4px solid #4C51BF;
+  font-size: 0.9em;
+  color: #4A5568;
+  text-align: left;
+  margin-top: 15px;
+}
+
+.complete-lab-button {
+  background: linear-gradient(135deg, #4C51BF, #667eea);
+  color: white;
+  border: none;
+  padding: 18px 40px;
+  border-radius: 25px;
+  font-size: 1.1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 15px;
+  box-shadow: 0 6px 20px rgba(76, 81, 191, 0.3);
+  min-width: 300px;
+}
+
+.complete-lab-button:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(76, 81, 191, 0.4);
+}
+
+.complete-lab-button:disabled {
+  background: #A0AEC0;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.reward-info {
+  color: #718096;
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .materials-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .simulation-area {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .bounce-or-break {
+    padding: 15px;
+  }
+  
+  .lab-tabs {
+    flex-direction: column;
+  }
+  
+  .control-buttons {
+    flex-direction: column;
+  }
+  
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .table-header,
+  .table-row {
+    grid-template-columns: 1fr 1fr 0.8fr;
+    font-size: 0.8em;
+  }
+  
+  .table-header span:nth-child(4),
+  .table-header span:nth-child(5),
+  .table-header span:nth-child(6),
+  .table-row span:nth-child(4),
+  .table-row span:nth-child(5),
+  .table-row span:nth-child(6) {
+    display: none;
+  }
+  
+  .drop-chamber {
+    height: 250px;
+  }
+
+  .drop-chamber {
+  position: relative;
+  height: 300px;
+  background: 
+    linear-gradient(to bottom, 
+      rgba(247, 250, 252, 0.8) 0%, 
+      rgba(237, 242, 247, 0.9) 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 19px,
+      rgba(76, 81, 191, 0.05) 19px,
+      rgba(76, 81, 191, 0.05) 20px
+    );
+  border-radius: 15px;
+  border: 3px solid #4C51BF;
+  overflow: hidden;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.1);
+}
+  
+  .test-ball {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2em;
+  }
+  
+  @keyframes ballSquash {
+    0% {
+      transform: translateX(-50%) scale(1, 1);
+    }
+    30% {
+      transform: translateX(-50%) scale(1.2, 0.8);
+    }
+    70% {
+      transform: translateX(-50%) scale(0.95, 1.05);
+    }
+    100% {
+      transform: translateX(-50%) scale(1, 1);
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .lab-title h1 {
+    font-size: 2em;
+  }
+  
+  .material-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+  
+  .complete-lab-button {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+/* Enhanced Ball Animations */
+.test-ball {
+  /* ... existing styles ... */
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+/* Realistic ball squash based on impact velocity */
+.test-ball.impact {
+  animation: ballSquash 0.3s ease-out;
+}
+
+@keyframes ballSquash {
+  0% {
+    transform: translateX(-50%) scale(1, 1);
+  }
+  30% {
+    transform: translateX(-50%) scale(1.3, 0.7);
+  }
+  70% {
+    transform: translateX(-50%) scale(0.9, 1.1);
+  }
+  100% {
+    transform: translateX(-50%) scale(1, 1);
+  }
+}
+
+.test-surface.impact-effect {
+  animation: surfaceImpact 0.3s ease-out;
+}
+
+@keyframes surfaceImpact {
+  0% {
+    transform: scaleY(1);
+    box-shadow: 0 0 0 rgba(76, 81, 191, 0);
+  }
+  30% {
+    transform: scaleY(0.95);
+    box-shadow: 0 0 25px rgba(76, 81, 191, 0.5);
+  }
+  100% {
+    transform: scaleY(1);
+    box-shadow: 0 0 0 rgba(76, 81, 191, 0);
+  }
+}
+
+/* Add subtle rotation for realism */
+@keyframes ballRotation {
+  0% {
+    transform: translateX(-50%) rotate(0deg);
+  }
+  100% {
+    transform: translateX(-50%) rotate(360deg);
+  }
+}
+
+.test-ball.loading {
+  animation: 
+    ballPulse 1.5s ease-in-out infinite,
+    ballRotation 3s linear infinite;
+}
+
+/* Enhanced completion animation */
+.test-ball.complete {
+  animation: celebrationBounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes celebrationBounce {
+  0%, 100% {
+    transform: translateX(-50%) scale(1);
+    box-shadow: 
+      0 6px 20px rgba(0, 0, 0, 0.25),
+      inset -5px -5px 10px rgba(0, 0, 0, 0.3),
+      inset 5px 5px 10px rgba(255, 255, 255, 0.2);
+  }
+  25% {
+    transform: translateX(-50%) scale(1.15) translateY(-5px);
+    box-shadow: 
+      0 12px 25px rgba(76, 81, 191, 0.5),
+      inset -3px -3px 6px rgba(0, 0, 0, 0.2),
+      inset 3px 3px 6px rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.1) translateY(2px);
+  }
+  75% {
+    transform: translateX(-50%) scale(1.12) translateY(-2px);
+  }
+}
+
+/* Add these fixes to your existing BounceOrBreak.css */
+
+/* FIXED: Test Ball positioning */
+.test-ball {
+  position: absolute;
+  top: 20px; /* Initial position at top */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 50px;
+  background: var(--ball-color, #718096);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5em;
+  z-index: 10;
+  box-shadow: 
+    0 6px 20px rgba(0, 0, 0, 0.25),
+    inset -5px -5px 10px rgba(0, 0, 0, 0.3),
+    inset 5px 5px 10px rgba(255, 255, 255, 0.2);
+  transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Changed to top */
+  will-change: top; /* Changed to top */
+}
+
+/* FIXED: Ball impact animation with top property */
+.test-ball.impact {
+  animation: ballSquash 0.2s ease-out;
+}
+
+@keyframes ballSquash {
+  0% {
+    transform: translateX(-50%) scale(1, 1);
+  }
+  30% {
+    transform: translateX(-50%) scale(1.3, 0.7);
+  }
+  70% {
+    transform: translateX(-50%) scale(0.9, 1.1);
+  }
+  100% {
+    transform: translateX(-50%) scale(1, 1);
+  }
+}
+
+/* FIXED: Ensure drop chamber has proper positioning context */
+.drop-chamber {
+  position: relative;
+  height: 300px;
+  background: 
+    linear-gradient(to bottom, 
+      rgba(247, 250, 252, 0.8) 0%, 
+      rgba(237, 242, 247, 0.9) 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 19px,
+      rgba(76, 81, 191, 0.05) 19px,
+      rgba(76, 81, 191, 0.05) 20px
+    );
+  border-radius: 15px;
+  border: 3px solid #4C51BF;
+  overflow: hidden;
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.1);
+}
