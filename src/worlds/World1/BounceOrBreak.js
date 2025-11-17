@@ -14,6 +14,18 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
   const [experiments, setExperiments] = useState([]);
   const [currentExperiment, setCurrentExperiment] = useState(null);
   const [activeTab, setActiveTab] = useState('experiment');
+  const [liveMeasurements, setLiveMeasurements] = useState({
+    velocity: 0,
+    height: 0,
+    energy: 0,
+    cor: 0,
+    bounceCount: 0
+  });
+  const [bounceHistory, setBounceHistory] = useState([]);
+  const [bounceIntensity, setBounceIntensity] = useState('medium');
+  const [showParticles, setShowParticles] = useState(false);
+  const [trailPositions, setTrailPositions] = useState([]);
+  const [isBallOnSurface, setIsBallOnSurface] = useState(false);
 
   const ballRef = useRef(null);
   const surfaceRef = useRef(null);
@@ -115,7 +127,7 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
     }
   ];
 
-  // Calculate physics based on ball and surface properties
+  // Enhanced physics calculation with multiple bounces
   const calculateCollisionPhysics = (ball, surface, height) => {
     const impactVelocity = Math.sqrt(2 * GRAVITY * height);
     
@@ -127,11 +139,27 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
     baseCOR *= velocityFactor;
     
     const actualCOR = Math.min(Math.max(baseCOR, 0.01), 0.95);
-    const reboundHeight = height * Math.pow(actualCOR, 2);
+    
+    // Calculate multiple bounces using hₙ = h₀ · r² formula
+    const bounces = [];
+    let currentHeight = height;
+    let bounceCount = 0;
+    
+    while (currentHeight > 0.005 && bounceCount < 15) {
+      const reboundHeight = currentHeight * Math.pow(actualCOR, 2);
+      bounces.push({
+        bounceNumber: bounceCount + 1,
+        dropHeight: currentHeight,
+        reboundHeight: reboundHeight,
+        energyRatio: Math.pow(actualCOR, 2 * (bounceCount + 1))
+      });
+      currentHeight = reboundHeight;
+      bounceCount++;
+    }
     
     // Energy calculations
     const initialEnergy = ball.mass * GRAVITY * height;
-    const reboundEnergy = ball.mass * GRAVITY * reboundHeight;
+    const reboundEnergy = ball.mass * GRAVITY * (bounces[0]?.reboundHeight || 0);
     const energyLossPercent = ((initialEnergy - reboundEnergy) / initialEnergy) * 100;
     
     // Determine collision type
@@ -145,31 +173,36 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
     
     return {
       coefficientOfRestitution: actualCOR,
-      reboundHeight: reboundHeight,
+      reboundHeight: bounces[0]?.reboundHeight || 0,
       energyLossPercent: energyLossPercent,
       collisionType: collisionType,
       impactVelocity: impactVelocity,
-      reboundVelocity: actualCOR * impactVelocity
+      reboundVelocity: actualCOR * impactVelocity,
+      collisionFormula: `h₂ = ${height.toFixed(2)} × ${actualCOR.toFixed(3)}² = ${(bounces[0]?.reboundHeight || 0).toFixed(3)}m`,
+      totalBounces: bounceCount,
+      bounceSequence: bounces
     };
   };
 
-  // FIXED: Improved animation function with proper positioning
+  // Enhanced animation with realistic bouncing and surface contact
   const performExperiment = () => {
     if (!selectedBall || !selectedSurface || isDropping) return;
     
-    console.log('Starting experiment with:', { selectedBall, selectedSurface, dropHeight });
-    
     setIsDropping(true);
     setShowResults(false);
+    setBounceHistory([]);
+    setShowParticles(false);
+    setTrailPositions([]);
+    setIsBallOnSurface(false);
     
     const ball = balls.find(b => b.id === selectedBall);
     const surface = surfaces.find(s => s.id === selectedSurface);
     const physics = calculateCollisionPhysics(ball, surface, dropHeight);
     
+    setCurrentExperiment(physics);
+    
     const ballElement = ballRef.current;
     const surfaceElement = surfaceRef.current;
-    
-    console.log('DOM elements:', { ballElement, surfaceElement });
     
     if (!ballElement || !surfaceElement) {
       console.error('Missing DOM elements');
@@ -178,20 +211,15 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
     }
     
     // Reset everything
-    ballElement.classList.remove('impact', 'complete', 'loading');
-    surfaceElement.classList.remove('impact-effect');
+    ballElement.classList.remove('impact', 'complete', 'loading', 'bouncing', 'bouncing-high', 'bouncing-medium', 'bouncing-low', 'celebration', 'on-surface');
+    surfaceElement.classList.remove('impact-effect', 'ripple', 'active-impact');
     
-    // FIXED: Force reflow by assigning to a variable instead of standalone expression
-    const reflow = ballElement.offsetHeight;
-    
-    // Start animation
-    requestAnimationFrame(() => {
-      animateBallDrop(ball, surface, physics);
-    });
+    // Start animation with realistic bouncing
+    animateRealisticBounce(ball, surface, physics);
   };
 
-  // FIXED: Completely rewritten animation function
-  const animateBallDrop = (ball, surface, physics) => {
+  // Realistic bounce animation with proper surface contact
+  const animateRealisticBounce = (ball, surface, physics) => {
     const ballElement = ballRef.current;
     const surfaceElement = surfaceRef.current;
     
@@ -200,97 +228,314 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
       return;
     }
     
-    const containerHeight = 300; // Match CSS height
-    const surfaceHeight = 50; // Match CSS surface height
-    const ballSize = 50; // Match CSS ball size
+    const containerHeight = 300;
+    const surfaceHeight = 50;
+    const ballSize = 50;
+    const maxDropHeight = 4;
     
-    // Calculate drop distance in pixels
-    const maxDropHeight = 4; // Maximum drop height in meters
-    const dropPixels = (dropHeight / maxDropHeight) * (containerHeight - surfaceHeight - ballSize - 20);
+    // Calculate initial drop position
+    const surfaceTop = containerHeight - surfaceHeight;
+    const dropPixels = (dropHeight / maxDropHeight) * (surfaceTop - ballSize - 20);
+    const surfaceContactPosition = surfaceTop - ballSize;
     
-    console.log('Animation parameters:', { 
-      dropHeight, 
-      dropPixels, 
-      containerHeight, 
-      maxDropHeight 
-    });
+    // Reset ball position
+    ballElement.classList.remove('bouncing', 'bouncing-high', 'bouncing-medium', 'bouncing-low');
+    ballElement.style.transition = 'none';
+    ballElement.style.top = '20px';
+    ballElement.style.transform = 'translateX(-50%) scale(1)';
     
-    // Add loading state
-    ballElement.classList.add('loading');
+    // Create shadow element if it doesn't exist
+    let shadowElement = document.querySelector('.ball-shadow');
+    if (!shadowElement) {
+      shadowElement = document.createElement('div');
+      shadowElement.className = 'ball-shadow';
+      ballElement.parentNode.appendChild(shadowElement);
+    }
     
-    // Calculate timing based on physics (convert to milliseconds)
-    const dropTime = Math.sqrt(2 * dropHeight / GRAVITY) * 1000;
+    // Force reflow
+    const reflow = ballElement.offsetHeight;
     
-    // FIXED: Use CSS top property instead of transform for better control
-    ballElement.style.transition = `top ${dropTime}ms cubic-bezier(0.55, 0.085, 0.68, 0.53)`;
-    ballElement.style.top = `${dropPixels}px`;
+    let currentBounce = 0;
+    const maxBounces = Math.min(physics.totalBounces, 8);
+
+    // Start initial drop
+    animateBounceSequence(0, dropHeight, dropPixels, true);
     
-    // When ball hits the surface
-    setTimeout(() => {
-      console.log('Ball hit surface - starting bounce');
+    function animateBounceSequence(bounceIndex, currentHeight, currentPixels, isInitialDrop = false) {
+      if (bounceIndex >= maxBounces) {
+        // Final settlement on surface
+        settleOnSurface(surfaceContactPosition);
+        return;
+      }
       
-      // Impact effects
-      ballElement.classList.remove('loading');
-      ballElement.classList.add('impact');
-      surfaceElement.classList.add('impact-effect');
+      const bounceData = physics.bounceSequence[bounceIndex];
+      if (!bounceData) {
+        settleOnSurface(surfaceContactPosition);
+        return;
+      }
       
-      // Calculate bounce parameters
-      const reboundHeight = physics.reboundHeight;
-      const bouncePixels = (reboundHeight / maxDropHeight) * (containerHeight - surfaceHeight - ballSize - 20);
-      const bounceTime = Math.sqrt(2 * reboundHeight / GRAVITY) * 1000;
+      // Determine bounce intensity based on rebound height
+      const intensity = getBounceIntensity(bounceData.reboundHeight);
+      setBounceIntensity(intensity);
       
-      console.log('Bounce parameters:', { reboundHeight, bouncePixels, bounceTime });
+      const dropTime = Math.sqrt(2 * currentHeight / GRAVITY) * 1000;
+      const reboundPixels = (bounceData.reboundHeight / maxDropHeight) * (surfaceTop - ballSize - 20);
       
-      // Remove impact effects and start bounce
-      setTimeout(() => {
-        ballElement.classList.remove('impact');
-        surfaceElement.classList.remove('impact-effect');
+      if (isInitialDrop) {
+        // Initial drop with acceleration
+        ballElement.style.transition = `top ${dropTime}ms cubic-bezier(0.55, 0.085, 0.68, 0.53), transform 100ms ease`;
+        ballElement.style.top = `${surfaceContactPosition}px`;
         
-        if (bouncePixels > 2) { // Only bounce if significant height
-          // First bounce up
-          ballElement.style.transition = `top ${bounceTime}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
-          ballElement.style.top = `${dropPixels - bouncePixels}px`;
+        // Update shadow during drop
+        updateShadow(shadowElement, currentHeight, dropHeight, true);
+        
+        // Update live measurements during drop
+        let dropStartTime = Date.now();
+        const dropInterval = setInterval(() => {
+          const elapsed = Date.now() - dropStartTime;
+          const progress = Math.min(elapsed / dropTime, 1);
+          const currentDropHeight = currentHeight * (1 - progress);
+          const currentVelocity = Math.sqrt(2 * GRAVITY * (currentHeight - currentDropHeight));
+          const currentEnergy = ball.mass * GRAVITY * currentDropHeight;
           
-          // Fall back down
-          setTimeout(() => {
-            ballElement.style.transition = `top ${bounceTime * 0.8}ms cubic-bezier(0.55, 0.085, 0.68, 0.53)`;
-            ballElement.style.top = `${dropPixels}px`;
+          // Add trail effect
+          addTrailPosition(ballElement.offsetTop + ballSize / 2);
+          
+          // Squash effect just before impact
+          if (progress > 0.9) {
+            ballElement.style.transform = `translateX(-50%) scale(${1.1}, ${0.9})`;
+          }
+          
+          setLiveMeasurements(prev => ({
+            ...prev,
+            velocity: currentVelocity,
+            height: currentDropHeight,
+            energy: currentEnergy,
+            bounceCount: currentBounce
+          }));
+        }, 16);
+        
+        // When ball hits the surface
+        setTimeout(() => {
+          clearInterval(dropInterval);
+          handleSurfaceImpact(bounceIndex, bounceData, surfaceContactPosition, reboundPixels, intensity);
+        }, dropTime);
+      } else {
+        // Subsequent bounces - drop from current height
+        ballElement.style.transition = `top ${dropTime}ms cubic-bezier(0.55, 0.085, 0.68, 0.53), transform 100ms ease`;
+        ballElement.style.top = `${surfaceContactPosition}px`;
+        
+        // Update shadow during drop
+        updateShadow(shadowElement, currentHeight, bounceData.dropHeight, false);
+        
+        // Update measurements during drop
+        let dropStartTime = Date.now();
+        const dropInterval = setInterval(() => {
+          const elapsed = Date.now() - dropStartTime;
+          const progress = Math.min(elapsed / dropTime, 1);
+          const currentDropHeight = currentHeight * (1 - progress);
+          const currentVelocity = Math.sqrt(2 * GRAVITY * currentDropHeight);
+          const currentEnergy = ball.mass * GRAVITY * currentDropHeight;
+          
+          // Add trail effect
+          addTrailPosition(ballElement.offsetTop + ballSize / 2);
+          
+          // Squash effect just before impact
+          if (progress > 0.9) {
+            ballElement.style.transform = `translateX(-50%) scale(${1.1}, ${0.9})`;
+          }
+          
+          setLiveMeasurements(prev => ({
+            ...prev,
+            velocity: -currentVelocity,
+            height: currentDropHeight,
+            energy: currentEnergy,
+            bounceCount: currentBounce
+          }));
+        }, 16);
+        
+        setTimeout(() => {
+          clearInterval(dropInterval);
+          handleSurfaceImpact(bounceIndex, bounceData, surfaceContactPosition, reboundPixels, intensity);
+        }, dropTime);
+      }
+    }
+    
+    function handleSurfaceImpact(bounceIndex, bounceData, contactPosition, reboundPixels, intensity) {
+      currentBounce = bounceIndex + 1;
+      
+      // Record bounce history
+      setBounceHistory(prev => [...prev, {
+        bounce: currentBounce,
+        height: bounceData.reboundHeight,
+        energy: Math.pow(physics.coefficientOfRestitution, 2 * currentBounce) * 100
+      }]);
+      
+      // Ball reaches surface - show full contact
+      ballElement.style.top = `${contactPosition}px`;
+      ballElement.classList.add('on-surface');
+      
+      // Strong impact effects
+      ballElement.classList.add(`impact-${intensity}`);
+      surfaceElement.classList.add('active-impact', 'ripple');
+      
+      // Create particle effect
+      createParticles(intensity);
+      
+      // Update shadow at impact
+      shadowElement.style.transform = `translateX(-50%) scale(2)`;
+      shadowElement.style.opacity = '0.1';
+      
+      // Update measurements at impact
+      setLiveMeasurements(prev => ({
+        ...prev,
+        velocity: 0,
+        height: 0,
+        energy: 0,
+        bounceCount: currentBounce
+      }));
+      
+      // Remove impact effects and start bounce up
+      setTimeout(() => {
+        ballElement.classList.remove(`impact-${intensity}`);
+        surfaceElement.classList.remove('active-impact');
+        ballElement.classList.remove('on-surface');
+        
+        if (bounceData.reboundHeight > 0.01) {
+          const bounceTime = Math.sqrt(2 * bounceData.reboundHeight / GRAVITY) * 1000;
+          const bounceHeight = contactPosition - reboundPixels;
+          
+          // Apply bouncing animation class
+          ballElement.classList.add(`bouncing-${intensity}`);
+          shadowElement.classList.add(`bouncing-${intensity}`);
+          
+          // Bounce up with realistic motion
+          ballElement.style.transition = `top ${bounceTime}ms cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 200ms ease`;
+          ballElement.style.top = `${bounceHeight}px`;
+          ballElement.style.transform = `translateX(-50%) scale(1)`;
+          
+          // Update shadow during bounce
+          shadowElement.style.transform = `translateX(-50%) scale(1)`;
+          shadowElement.style.opacity = '0.3';
+          
+          // Update measurements during bounce up
+          let bounceStartTime = Date.now();
+          const bounceInterval = setInterval(() => {
+            const elapsed = Date.now() - bounceStartTime;
+            const progress = Math.min(elapsed / bounceTime, 1);
+            const currentBounceHeight = bounceData.reboundHeight * progress;
+            const currentVelocity = physics.reboundVelocity * (1 - progress);
+            const currentEnergy = ball.mass * GRAVITY * currentBounceHeight;
             
-            // Second bounce (smaller)
-            setTimeout(() => {
-              const secondBounceHeight = reboundHeight * physics.coefficientOfRestitution;
-              const secondBouncePixels = (secondBounceHeight / maxDropHeight) * (containerHeight - surfaceHeight - ballSize - 20);
-              
-              if (secondBouncePixels > 1) {
-                const secondBounceTime = Math.sqrt(2 * secondBounceHeight / GRAVITY) * 800;
-                
-                // Second bounce up
-                ballElement.style.transition = `top ${secondBounceTime}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
-                ballElement.style.top = `${dropPixels - secondBouncePixels}px`;
-                
-                // Final fall
-                setTimeout(() => {
-                  ballElement.style.transition = `top ${secondBounceTime * 0.6}ms cubic-bezier(0.55, 0.085, 0.68, 0.53)`;
-                  ballElement.style.top = `${dropPixels}px`;
-                  
-                  // Animation complete
-                  setTimeout(() => {
-                    finishExperiment(ball, surface, physics);
-                  }, secondBounceTime * 0.6);
-                }, secondBounceTime);
-              } else {
-                finishExperiment(ball, surface, physics);
-              }
-            }, bounceTime * 0.8);
+            // Add trail effect
+            addTrailPosition(ballElement.offsetTop + ballSize / 2);
+            
+            // Stretch effect during ascent
+            if (progress < 0.3) {
+              ballElement.style.transform = `translateX(-50%) scale(${0.9}, ${1.1})`;
+            } else {
+              ballElement.style.transform = `translateX(-50%) scale(1)`;
+            }
+            
+            setLiveMeasurements(prev => ({
+              ...prev,
+              velocity: currentVelocity,
+              height: currentBounceHeight,
+              energy: currentEnergy,
+              bounceCount: currentBounce
+            }));
+          }, 16);
+          
+          // Prepare for next bounce
+          setTimeout(() => {
+            clearInterval(bounceInterval);
+            ballElement.classList.remove(`bouncing-${intensity}`);
+            shadowElement.classList.remove(`bouncing-${intensity}`);
+            
+            // Check if we should continue bouncing
+            const nextBounceIndex = bounceIndex + 1;
+            const nextBounceData = physics.bounceSequence[nextBounceIndex];
+            
+            if (nextBounceData && nextBounceData.reboundHeight > 0.01) {
+              // Continue with next bounce
+              setTimeout(() => {
+                animateBounceSequence(nextBounceIndex, bounceData.reboundHeight, bounceHeight, false);
+              }, 50);
+            } else {
+              // Final settlement
+              setTimeout(() => {
+                settleOnSurface(contactPosition);
+              }, 100);
+            }
           }, bounceTime);
         } else {
-          // No significant bounce - just complete
+          // No significant bounce - settle immediately
           setTimeout(() => {
-            finishExperiment(ball, surface, physics);
-          }, 300);
+            settleOnSurface(contactPosition);
+          }, 200);
         }
-      }, 150); // Impact effect duration
-    }, dropTime);
+      }, 120); // Contact duration
+    }
+    
+    function settleOnSurface(contactPosition) {
+      // Final settlement on surface
+      ballElement.style.transition = `top 300ms ease-out, transform 400ms ease`;
+      ballElement.style.top = `${contactPosition}px`;
+      ballElement.classList.add('on-surface', 'settled');
+      
+      // Final shadow
+      shadowElement.style.transform = `translateX(-50%) scale(1.5)`;
+      shadowElement.style.opacity = '0.4';
+      
+      // Final squash and settle
+      setTimeout(() => {
+        ballElement.style.transform = `translateX(-50%) scale(1.05, 0.95)`;
+        
+        setTimeout(() => {
+          ballElement.style.transform = `translateX(-50%) scale(1)`;
+          setIsBallOnSurface(true);
+          finishExperiment(ball, surface, physics);
+        }, 200);
+      }, 300);
+    }
+    
+    // Helper function to determine bounce intensity
+    function getBounceIntensity(reboundHeight) {
+      if (reboundHeight > dropHeight * 0.5) return 'high';
+      if (reboundHeight > dropHeight * 0.2) return 'medium';
+      return 'low';
+    }
+    
+    // Helper function to update shadow
+    function updateShadow(shadowElement, currentHeight, maxHeight, isInitial) {
+      const scale = 1 + (currentHeight / maxHeight) * 0.8;
+      const opacity = 0.2 + (currentHeight / maxHeight) * 0.3;
+      shadowElement.style.transform = `translateX(-50%) scale(${scale})`;
+      shadowElement.style.opacity = opacity.toString();
+    }
+    
+    // Helper function to create particle effects
+    function createParticles(intensity) {
+      setShowParticles(true);
+      setTimeout(() => {
+        setShowParticles(false);
+      }, 600);
+    }
+    
+    // Helper function to add trail positions
+    function addTrailPosition(top) {
+      const newTrail = {
+        id: Date.now() + Math.random(),
+        top: top,
+        left: '50%'
+      };
+      setTrailPositions(prev => [...prev.slice(-8), newTrail]);
+      
+      // Auto-remove trail after animation
+      setTimeout(() => {
+        setTrailPositions(prev => prev.filter(trail => trail.id !== newTrail.id));
+      }, 800);
+    }
   };
 
   const finishExperiment = (ball, surface, physics) => {
@@ -302,6 +547,21 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
     if (ballElement) {
       ballElement.classList.add('complete');
     }
+    
+    // Remove shadow
+    const shadowElement = document.querySelector('.ball-shadow');
+    if (shadowElement) {
+      shadowElement.remove();
+    }
+    
+    // Final live measurements
+    setLiveMeasurements({
+      velocity: 0,
+      height: 0,
+      energy: 0,
+      cor: physics.coefficientOfRestitution,
+      bounceCount: physics.totalBounces
+    });
   };
 
   const recordExperiment = (ball, surface, physics) => {
@@ -314,6 +574,8 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
       energyLost: physics.energyLossPercent,
       collisionType: physics.collisionType,
       ballType: ball.classification,
+      collisionFormula: physics.collisionFormula,
+      totalBounces: physics.totalBounces,
       timestamp: new Date().toLocaleTimeString()
     };
     
@@ -321,23 +583,44 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
     setCurrentExperiment(experiment);
   };
 
-  // FIXED: Reset function
   const resetExperiment = () => {
     setIsDropping(false);
     setShowResults(false);
+    setLiveMeasurements({
+      velocity: 0,
+      height: 0,
+      energy: 0,
+      cor: 0,
+      bounceCount: 0
+    });
+    setBounceHistory([]);
+    setBounceIntensity('medium');
+    setShowParticles(false);
+    setTrailPositions([]);
+    setIsBallOnSurface(false);
     
     const ballElement = ballRef.current;
     if (ballElement) {
-      ballElement.classList.remove('impact', 'complete', 'loading');
+      ballElement.classList.remove(
+        'impact', 'complete', 'loading', 
+        'bouncing', 'bouncing-high', 'bouncing-medium', 'bouncing-low',
+        'celebration', 'impact-strong', 'impact-medium', 'impact-weak',
+        'on-surface', 'settled'
+      );
       ballElement.style.transition = 'none';
-      ballElement.style.top = '20px'; // Reset to top position
-      
-      // FIXED: Force reflow by assigning to a variable
+      ballElement.style.top = '20px';
+      ballElement.style.transform = 'translateX(-50%) scale(1)';
       const reflow = ballElement.offsetHeight;
     }
     
     if (surfaceRef.current) {
-      surfaceRef.current.classList.remove('impact-effect');
+      surfaceRef.current.classList.remove('impact-effect', 'ripple', 'active-impact');
+    }
+    
+    // Remove shadow and particles
+    const shadowElement = document.querySelector('.ball-shadow');
+    if (shadowElement) {
+      shadowElement.remove();
     }
   };
 
@@ -497,20 +780,84 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
                   <div className="scale-line"></div>
                 </div>
 
-                {isDropping && (
-                  <div className="animation-stats">
-                    <div>🏃‍♂️ Velocity: {Math.sqrt(2 * GRAVITY * dropHeight).toFixed(1)} m/s</div>
-                    <div>⚡ Energy: {(selectedBall ? balls.find(b => b.id === selectedBall)?.mass * GRAVITY * dropHeight : 0).toFixed(2)} J</div>
+                {/* Enhanced Live Measurements */}
+                <div className="live-measurements">
+                  <div className="measurement-card">
+                    <div className="measurement-label">Current Height</div>
+                    <div className="measurement-value">
+                      {liveMeasurements.height.toFixed(2)} m
+                    </div>
+                  </div>
+                  <div className="measurement-card">
+                    <div className="measurement-label">Velocity</div>
+                    <div className="measurement-value">
+                      {Math.abs(liveMeasurements.velocity).toFixed(2)} m/s
+                      {liveMeasurements.velocity > 0 ? ' ↑' : liveMeasurements.velocity < 0 ? ' ↓' : ''}
+                    </div>
+                  </div>
+                  <div className="measurement-card">
+                    <div className="measurement-label">Energy</div>
+                    <div className="measurement-value">
+                      {liveMeasurements.energy.toFixed(2)} J
+                    </div>
+                  </div>
+                  <div className="measurement-card bounce-count">
+                    <div className="measurement-label">Bounce Count</div>
+                    <div className="measurement-value">
+                      {liveMeasurements.bounceCount}
+                    </div>
+                  </div>
+                  {liveMeasurements.cor > 0 && (
+                    <div className="measurement-card">
+                      <div className="measurement-label">COR</div>
+                      <div className="measurement-value" style={{ color: getCORColor(liveMeasurements.cor) }}>
+                        {liveMeasurements.cor.toFixed(3)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Enhanced Animation Effects */}
+                {showParticles && (
+                  <div className="impact-particles">
+                    {[...Array(12)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="particle"
+                        style={{
+                          '--tx': `${(Math.random() - 0.5) * 100}px`,
+                          '--ty': `${-Math.random() * 50}px`,
+                          animation: `particleFly 0.6s ease-out ${i * 0.05}s forwards`,
+                          left: `${50 + (Math.random() - 0.5) * 40}%`,
+                          bottom: '0px'
+                        }}
+                      />
+                    ))}
                   </div>
                 )}
 
-                {/* FIXED: Ball element with proper initial positioning */}
+                {/* Bounce Trail */}
+                <div className="bounce-trail">
+                  {trailPositions.map((trail) => (
+                    <div
+                      key={trail.id}
+                      className="trail-dot"
+                      style={{
+                        top: `${trail.top}px`,
+                        left: trail.left,
+                        backgroundColor: selectedBall ? balls.find(b => b.id === selectedBall)?.color : '#6B7280'
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* Ball element */}
                 <div
                   ref={ballRef}
-                  className={`test-ball ${isDropping ? 'loading' : ''} ${showResults ? 'complete' : ''}`}
+                  className={`test-ball ${isDropping ? 'loading' : ''} ${showResults ? 'complete' : ''} ${isBallOnSurface ? 'on-surface settled' : ''}`}
                   style={{
                     '--ball-color': selectedBall ? balls.find(b => b.id === selectedBall)?.color : '#6B7280',
-                    top: '20px' // Initial position at top
+                    top: '20px'
                   }}
                 >
                   {selectedBall && balls.find(b => b.id === selectedBall)?.emoji}
@@ -518,7 +865,7 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
 
                 <div
                   ref={surfaceRef}
-                  className="test-surface"
+                  className={`test-surface ${isDropping ? 'active' : ''}`}
                   style={{
                     backgroundColor: selectedSurface 
                       ? surfaces.find(s => s.id === selectedSurface)?.color 
@@ -527,6 +874,7 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
                 >
                   <div className="surface-label">
                     {selectedSurface && surfaces.find(s => s.id === selectedSurface)?.name}
+                    {isBallOnSurface && <span className="surface-contact"> • CONTACT</span>}
                   </div>
                 </div>
               </div>
@@ -543,6 +891,52 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
                     <div className="classification-text">
                       <strong>{currentExperiment.collisionType} Collision</strong>
                       <span>Coefficient of Restitution: {currentExperiment.coefficientOfRestitution.toFixed(3)}</span>
+                      <span>Total Bounces: {currentExperiment.totalBounces}</span>
+                    </div>
+                  </div>
+
+                  {/* Bounce Sequence Display */}
+                  {bounceHistory.length > 0 && (
+                    <div className="bounce-sequence">
+                      <h4>Bounce Sequence Analysis</h4>
+                      <div className="bounce-history">
+                        {bounceHistory.slice(0, 8).map((bounce, index) => (
+                          <div key={index} className="bounce-item">
+                            <div className="bounce-number">Bounce #{bounce.bounce}</div>
+                            <div className="bounce-height">Height: {bounce.height.toFixed(3)}m</div>
+                            <div className="bounce-energy">Energy: {bounce.energy.toFixed(1)}%</div>
+                            <div className="bounce-formula">
+                              h{String.fromCharCode(8320 + bounce.bounce)} = {dropHeight.toFixed(2)} × {currentExperiment.coefficientOfRestitution.toFixed(3)}
+                              <sup>{2 * bounce.bounce}</sup> = {bounce.height.toFixed(3)}m
+                            </div>
+                          </div>
+                        ))}
+                        {bounceHistory.length > 8 && (
+                          <div className="bounce-more">
+                            + {bounceHistory.length - 8} more bounces...
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Formula Display */}
+                  <div className="formula-display">
+                    <h4>Collision Formula Applied</h4>
+                    <div className="formula-card">
+                      <div className="formula-title">hₙ = h₀ · r²</div>
+                      <div className="formula-explanation">
+                        Where:
+                        <ul>
+                          <li>h₀ = Initial height ({dropHeight.toFixed(2)}m)</li>
+                          <li>r = Coefficient of restitution ({currentExperiment.coefficientOfRestitution.toFixed(3)})</li>
+                          <li>hₙ = Rebound height after n bounces</li>
+                          <li>Total bounces until rest: {currentExperiment.totalBounces}</li>
+                        </ul>
+                      </div>
+                      <div className="formula-calculation">
+                        {currentExperiment.collisionFormula}
+                      </div>
                     </div>
                   </div>
 
@@ -605,6 +999,8 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
                   <span>Rebound (m)</span>
                   <span>Coefficient</span>
                   <span>Type</span>
+                  <span>Bounces</span>
+                  <span>Formula</span>
                 </div>
                 {experiments.slice().reverse().map((exp, index) => (
                   <div key={index} className="table-row">
@@ -617,6 +1013,10 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
                     </span>
                     <span className={`collision-type ${exp.collisionType.toLowerCase().replace(/ /g, '-')}`}>
                       {exp.collisionType}
+                    </span>
+                    <span>{exp.totalBounces}</span>
+                    <span className="formula-cell" title={exp.collisionFormula}>
+                      h₂ = h₀·r²
                     </span>
                   </div>
                 ))}
@@ -634,6 +1034,7 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
                 <li>Learn about energy conservation in collisions</li>
                 <li>Classify materials based on bounce characteristics</li>
                 <li>Calculate coefficient of restitution</li>
+                <li>Apply the collision formula hₙ = h₀ · r²</li>
               </ul>
             </div>
 
@@ -662,6 +1063,11 @@ const BounceOrBreak = ({ onComplete, navigate }) => {
                   <strong>Coefficient of Restitution (e):</strong>
                   <code>e = √(h₂/h₁) = v₂/v₁</code>
                   <p>Where h₁ is drop height, h₂ is rebound height</p>
+                </div>
+                <div className="formula">
+                  <strong>Collision Formula:</strong>
+                  <code>hₙ = h₀ · r²</code>
+                  <p>Where h₀ is initial height, r is coefficient of restitution, hₙ is rebound height after n bounces</p>
                 </div>
                 <div className="formula">
                   <strong>Impact Velocity:</strong>

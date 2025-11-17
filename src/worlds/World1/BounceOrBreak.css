@@ -364,27 +364,70 @@
   z-index: 1;
 }
 
-/* Animation Stats */
-.animation-stats {
+/* Live Measurements */
+.live-measurements {
   position: absolute;
   top: 10px;
   left: 10px;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 10px 15px;
-  border-radius: 10px;
-  font-size: 0.8em;
-  color: #4A5568;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
   z-index: 5;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border: 1px solid #E2E8F0;
+  min-width: 250px;
 }
 
-.animation-stats div {
-  margin: 3px 0;
+.measurement-card {
+  text-align: center;
+  padding: 6px;
+  background: #F7FAFC;
+  border-radius: 6px;
+  border: 1px solid #E2E8F0;
+  transition: all 0.3s ease;
+}
+
+.measurement-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.measurement-card.bounce-count {
+  grid-column: 1 / -1;
+  background: #4C51BF;
+  color: white;
+}
+
+.measurement-card.bounce-count .measurement-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.measurement-card.bounce-count .measurement-value {
+  color: white;
+  font-size: 1em;
+}
+
+.measurement-label {
+  font-size: 0.7em;
+  color: #718096;
+  margin-bottom: 2px;
   font-weight: 500;
 }
 
-/* Test Ball with Enhanced 3D Effect */
+.measurement-value {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: #4C51BF;
+}
+
+/* ============================================
+   REALISTIC BOUNCING ANIMATIONS
+   ============================================ */
+
+/* Enhanced Ball Styling with Shadow */
 .test-ball {
   position: absolute;
   top: 20px;
@@ -400,16 +443,101 @@
   font-size: 1.5em;
   z-index: 10;
   box-shadow: 
-    0 6px 20px rgba(0, 0, 0, 0.25),
-    inset -5px -5px 10px rgba(0, 0, 0, 0.3),
-    inset 5px 5px 10px rgba(255, 255, 255, 0.2);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
+    0 8px 25px rgba(0, 0, 0, 0.3),
+    inset -8px -8px 15px rgba(0, 0, 0, 0.4),
+    inset 8px 8px 15px rgba(255, 255, 255, 0.3),
+    0 0 20px rgba(255, 255, 255, 0.1);
+  transition: 
+    top 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.2s ease;
+  will-change: top, transform;
+}
+
+/* Ball Shadow Element */
+.ball-shadow {
+  position: absolute;
+  bottom: 55px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  filter: blur(3px);
+  z-index: 9;
+  transition: all 0.3s ease;
+}
+
+/* Realistic bounce with proper surface contact */
+.test-ball.on-surface {
+  top: calc(100% - 100px) !important;
+  transform: translateX(-50%) scale(1.1, 0.9);
+  transition: all 0.1s ease-out;
+}
+
+.test-ball.on-surface.settled {
+  transform: translateX(-50%) scale(1);
+  box-shadow: 
+    0 2px 10px rgba(0, 0, 0, 0.3),
+    inset -3px -3px 8px rgba(0, 0, 0, 0.4),
+    inset 3px 3px 8px rgba(255, 255, 255, 0.2);
+}
+
+/* Enhanced shadow for surface contact */
+.ball-shadow.on-surface {
+  transform: translateX(-50%) scale(1.8);
+  opacity: 0.6;
+  filter: blur(5px);
+}
+
+/* Bouncing States */
+.test-ball.bouncing {
+  animation: 
+    squashStretch 0.6s ease-in-out,
+    ballRotate 2s linear infinite;
+}
+
+.test-ball.bouncing-high {
+  animation: 
+    bounceTrajectoryHigh 0.8s ease-in-out,
+    ballRotate 1.2s linear infinite;
+}
+
+.test-ball.bouncing-medium {
+  animation: 
+    bounceTrajectoryMedium 0.6s ease-in-out,
+    ballRotate 1.5s linear infinite;
+}
+
+.test-ball.bouncing-low {
+  animation: 
+    bounceTrajectoryLow 0.4s ease-in-out,
+    ballRotate 2s linear infinite;
+}
+
+/* Shadow animations during bounce */
+.ball-shadow.bouncing {
+  animation: bounceShadow 0.6s ease-in-out infinite;
+}
+
+.ball-shadow.bouncing-high {
+  animation: bounceShadow 1.2s ease-in-out infinite;
+}
+
+.ball-shadow.bouncing-medium {
+  animation: bounceShadow 0.9s ease-in-out infinite;
+}
+
+.ball-shadow.bouncing-low {
+  animation: bounceShadow 0.6s ease-in-out infinite;
 }
 
 /* Ball Loading State */
 .test-ball.loading {
-  animation: ballPulse 1.5s ease-in-out infinite;
+  animation: 
+    ballPulse 1.5s ease-in-out infinite,
+    ballRotate 3s linear infinite,
+    colorShift 2s ease-in-out infinite;
 }
 
 @keyframes ballPulse {
@@ -423,23 +551,183 @@
   }
 }
 
-/* Ball Impact Animation */
-.test-ball.impact {
-  animation: ballSquash 0.2s ease-out;
+@keyframes colorShift {
+  0%, 100% {
+    filter: hue-rotate(0deg) brightness(1);
+  }
+  50% {
+    filter: hue-rotate(180deg) brightness(1.2);
+  }
 }
 
-@keyframes ballSquash {
+/* Enhanced Impact Effects */
+.test-ball.impact-strong {
+  animation: 
+    realisticSquash 0.4s ease-out,
+    impactGlow 0.6s ease-out;
+}
+
+.test-ball.impact-medium {
+  animation: 
+    realisticSquash 0.3s ease-out,
+    impactGlow 0.4s ease-out;
+}
+
+.test-ball.impact-weak {
+  animation: 
+    realisticSquash 0.2s ease-out,
+    impactGlow 0.3s ease-out;
+}
+
+/* Realistic squash and stretch */
+@keyframes realisticSquash {
   0% {
     transform: translateX(-50%) scale(1, 1);
   }
   30% {
+    transform: translateX(-50%) scale(1.4, 0.6);
+  }
+  40% {
     transform: translateX(-50%) scale(1.3, 0.7);
   }
-  70% {
-    transform: translateX(-50%) scale(0.9, 1.1);
+  60% {
+    transform: translateX(-50%) scale(0.8, 1.2);
+  }
+  80% {
+    transform: translateX(-50%) scale(1.1, 0.9);
   }
   100% {
     transform: translateX(-50%) scale(1, 1);
+  }
+}
+
+@keyframes impactGlow {
+  0% {
+    box-shadow: 
+      0 8px 25px rgba(0, 0, 0, 0.3),
+      inset -8px -8px 15px rgba(0, 0, 0, 0.4),
+      inset 8px 8px 15px rgba(255, 255, 255, 0.3),
+      0 0 0px var(--ball-color, #718096);
+  }
+  50% {
+    box-shadow: 
+      0 8px 25px rgba(0, 0, 0, 0.3),
+      inset -8px -8px 15px rgba(0, 0, 0, 0.4),
+      inset 8px 8px 15px rgba(255, 255, 255, 0.3),
+      0 0 30px var(--ball-color, #718096),
+      0 0 60px rgba(255, 255, 255, 0.5);
+  }
+  100% {
+    box-shadow: 
+      0 8px 25px rgba(0, 0, 0, 0.3),
+      inset -8px -8px 15px rgba(0, 0, 0, 0.4),
+      inset 8px 8px 15px rgba(255, 255, 255, 0.3),
+      0 0 0px var(--ball-color, #718096);
+  }
+}
+
+/* Realistic bounce trajectories */
+@keyframes bounceTrajectoryHigh {
+  0%, 100% {
+    transform: translateX(-50%) scale(1, 1);
+  }
+  15% {
+    transform: translateX(-50%) scale(1.2, 0.8);
+  }
+  30% {
+    transform: translateX(-50%) scale(1.1, 0.9);
+  }
+  50% {
+    transform: translateX(-50%) scale(0.9, 1.1);
+  }
+  70% {
+    transform: translateX(-50%) scale(1.05, 0.95);
+  }
+  85% {
+    transform: translateX(-50%) scale(0.95, 1.05);
+  }
+}
+
+@keyframes bounceTrajectoryMedium {
+  0%, 100% {
+    transform: translateX(-50%) scale(1, 1);
+  }
+  20% {
+    transform: translateX(-50%) scale(1.15, 0.85);
+  }
+  40% {
+    transform: translateX(-50%) scale(1.05, 0.95);
+  }
+  60% {
+    transform: translateX(-50%) scale(0.95, 1.05);
+  }
+  80% {
+    transform: translateX(-50%) scale(1.02, 0.98);
+  }
+}
+
+@keyframes bounceTrajectoryLow {
+  0%, 100% {
+    transform: translateX(-50%) scale(1, 1);
+  }
+  25% {
+    transform: translateX(-50%) scale(1.1, 0.9);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.05, 0.95);
+  }
+  75% {
+    transform: translateX(-50%) scale(0.98, 1.02);
+  }
+}
+
+/* Squash and Stretch Animation */
+@keyframes squashStretch {
+  0% {
+    transform: translateX(-50%) scale(1, 1);
+  }
+  15% {
+    transform: translateX(-50%) scale(1.3, 0.7);
+  }
+  30% {
+    transform: translateX(-50%) scale(1, 1);
+  }
+  45% {
+    transform: translateX(-50%) scale(0.8, 1.2);
+  }
+  60% {
+    transform: translateX(-50%) scale(1, 1);
+  }
+}
+
+/* Bounce Shadow Animation */
+@keyframes bounceShadow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.3;
+  }
+}
+
+/* Ball Rotation during Bounce */
+@keyframes ballRotate {
+  0% {
+    transform: translateX(-50%) rotate(0deg);
+  }
+  25% {
+    transform: translateX(-50%) rotate(90deg);
+  }
+  50% {
+    transform: translateX(-50%) rotate(180deg);
+  }
+  75% {
+    transform: translateX(-50%) rotate(270deg);
+  }
+  100% {
+    transform: translateX(-50%) rotate(360deg);
   }
 }
 
@@ -465,6 +753,37 @@
   }
 }
 
+/* Celebration Animation for Multiple Bounces */
+.test-ball.celebration {
+  animation: 
+    celebrationBounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+    colorShift 1.5s ease-in-out infinite,
+    ballRotate 1s linear infinite;
+}
+
+@keyframes celebrationBounce {
+  0%, 100% {
+    transform: translateX(-50%) scale(1);
+    box-shadow: 
+      0 6px 20px rgba(0, 0, 0, 0.25),
+      inset -5px -5px 10px rgba(0, 0, 0, 0.3),
+      inset 5px 5px 10px rgba(255, 255, 255, 0.2);
+  }
+  25% {
+    transform: translateX(-50%) scale(1.15) translateY(-5px);
+    box-shadow: 
+      0 12px 25px rgba(76, 81, 191, 0.5),
+      inset -3px -3px 6px rgba(0, 0, 0, 0.2),
+      inset 3px 3px 6px rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.1) translateY(2px);
+  }
+  75% {
+    transform: translateX(-50%) scale(1.12) translateY(-2px);
+  }
+}
+
 /* Enhanced Surface Styling */
 .test-surface {
   position: absolute;
@@ -482,6 +801,33 @@
     transparent 40%);
   transition: all 0.3s ease;
   z-index: 5;
+}
+
+/* Enhanced surface contact effects */
+.test-surface.active-impact {
+  animation: surfaceCompression 0.3s ease-out;
+  box-shadow: 
+    inset 0 -15px 30px rgba(0, 0, 0, 0.4),
+    0 0 40px currentColor;
+}
+
+@keyframes surfaceCompression {
+  0% {
+    transform: scaleY(1);
+    box-shadow: inset 0 0 0 rgba(0, 0, 0, 0);
+  }
+  50% {
+    transform: scaleY(0.92);
+    box-shadow: 
+      inset 0 -20px 40px rgba(0, 0, 0, 0.6),
+      0 0 50px currentColor;
+  }
+  100% {
+    transform: scaleY(1);
+    box-shadow: 
+      inset 0 -10px 20px rgba(0, 0, 0, 0.3),
+      0 0 20px currentColor;
+  }
 }
 
 /* Surface Impact Animation */
@@ -504,12 +850,116 @@
   }
 }
 
+/* Surface Ripple Effect */
+@keyframes surfaceRipple {
+  0% {
+    transform: scale(1);
+    box-shadow: 
+      inset 0 0 0 rgba(76, 81, 191, 0),
+      0 0 0 rgba(76, 81, 191, 0);
+  }
+  50% {
+    transform: scale(0.98);
+    box-shadow: 
+      inset 0 -10px 20px rgba(76, 81, 191, 0.3),
+      0 0 30px rgba(76, 81, 191, 0.5);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 
+      inset 0 0 0 rgba(76, 81, 191, 0),
+      0 0 0 rgba(76, 81, 191, 0);
+  }
+}
+
+.test-surface.ripple {
+  animation: surfaceRipple 0.6s ease-out;
+}
+
+/* Surface contact indicator */
+.surface-contact {
+  font-size: 0.7em;
+  color: #FFD700;
+  font-weight: bold;
+  margin-left: 5px;
+  animation: contactPulse 1s ease-in-out infinite;
+}
+
+@keyframes contactPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
 .surface-label {
   background: rgba(0, 0, 0, 0.4);
   padding: 8px 16px;
   border-radius: 20px;
   font-size: 0.9em;
   backdrop-filter: blur(5px);
+}
+
+/* Particle Effects for Impact */
+.impact-particles {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 30px;
+  z-index: 8;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: var(--ball-color, #718096);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+@keyframes particleFly {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(0);
+    opacity: 0;
+  }
+}
+
+/* Bounce Trail Effect */
+.bounce-trail {
+  position: absolute;
+  pointer-events: none;
+  z-index: 7;
+}
+
+.trail-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--ball-color, #718096);
+  border-radius: 50%;
+  opacity: 0.8;
+  transform: translate(-50%, -50%);
+  animation: trailFadeRealistic 0.8s ease-out forwards;
+}
+
+@keyframes trailFadeRealistic {
+  0% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: translate(-50%, -50%) scale(0.7);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
 }
 
 /* Results Panel */
@@ -575,6 +1025,131 @@
 .classification-text span {
   font-size: 0.9em;
   color: #4A5568;
+}
+
+/* Bounce Sequence Styles */
+.bounce-sequence {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+  margin-bottom: 20px;
+}
+
+.bounce-sequence h4 {
+  color: #4A5568;
+  margin-bottom: 12px;
+  font-size: 1.1em;
+}
+
+.bounce-history {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.bounce-item {
+  background: #F7FAFC;
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 4px solid #4C51BF;
+  transition: transform 0.2s ease;
+}
+
+.bounce-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.bounce-number {
+  font-weight: 600;
+  color: #4C51BF;
+  margin-bottom: 6px;
+  font-size: 0.9em;
+}
+
+.bounce-height,
+.bounce-energy {
+  font-size: 0.8em;
+  color: #4A5568;
+  margin-bottom: 4px;
+}
+
+.bounce-formula {
+  font-size: 0.7em;
+  color: #718096;
+  font-family: 'Courier New', monospace;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #E2E8F0;
+}
+
+.bounce-more {
+  text-align: center;
+  padding: 10px;
+  color: #718096;
+  font-style: italic;
+  grid-column: 1 / -1;
+}
+
+/* Formula Display */
+.formula-display {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
+  margin-bottom: 20px;
+}
+
+.formula-display h4 {
+  color: #4A5568;
+  margin-bottom: 12px;
+  font-size: 1.1em;
+}
+
+.formula-card {
+  background: #F7FAFC;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid #4C51BF;
+}
+
+.formula-title {
+  font-size: 1.3em;
+  font-weight: 700;
+  color: #2D3748;
+  margin-bottom: 10px;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+}
+
+.formula-explanation {
+  font-size: 0.85em;
+  color: #4A5568;
+  margin-bottom: 12px;
+}
+
+.formula-explanation ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.formula-explanation li {
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.formula-calculation {
+  background: #2D3748;
+  color: #E2E8F0;
+  padding: 12px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+  text-align: center;
+  font-weight: 500;
 }
 
 .results-grid {
@@ -713,7 +1288,7 @@
 
 .table-header {
   display: grid;
-  grid-template-columns: 1fr 1fr 0.8fr 1fr 1fr 1.2fr;
+  grid-template-columns: 1fr 1fr 0.8fr 1fr 1fr 1.2fr 0.8fr 1fr;
   gap: 10px;
   padding: 15px 20px;
   background: #4C51BF;
@@ -724,7 +1299,7 @@
 
 .table-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 0.8fr 1fr 1fr 1.2fr;
+  grid-template-columns: 1fr 1fr 0.8fr 1fr 1fr 1.2fr 0.8fr 1fr;
   gap: 10px;
   padding: 12px 20px;
   border-bottom: 1px solid #E2E8F0;
@@ -770,6 +1345,13 @@
 .collision-type.perfectly-inelastic {
   background: #FED7D7;
   color: #742A2A;
+}
+
+.formula-cell {
+  font-size: 0.8em;
+  font-family: 'Courier New', monospace;
+  color: #4C51BF;
+  cursor: help;
 }
 
 /* Theory Guide */
@@ -1010,38 +1592,14 @@
     font-size: 0.8em;
   }
   
-  .table-header span:nth-child(4),
-  .table-header span:nth-child(5),
-  .table-header span:nth-child(6),
-  .table-row span:nth-child(4),
-  .table-row span:nth-child(5),
-  .table-row span:nth-child(6) {
+  .table-header span:nth-child(n+4),
+  .table-row span:nth-child(n+4) {
     display: none;
   }
   
   .drop-chamber {
     height: 250px;
   }
-
-  .drop-chamber {
-  position: relative;
-  height: 300px;
-  background: 
-    linear-gradient(to bottom, 
-      rgba(247, 250, 252, 0.8) 0%, 
-      rgba(237, 242, 247, 0.9) 100%),
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 19px,
-      rgba(76, 81, 191, 0.05) 19px,
-      rgba(76, 81, 191, 0.05) 20px
-    );
-  border-radius: 15px;
-  border: 3px solid #4C51BF;
-  overflow: hidden;
-  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.1);
-}
   
   .test-ball {
     width: 40px;
@@ -1049,6 +1607,43 @@
     font-size: 1.2em;
   }
   
+  .test-ball.on-surface {
+    top: calc(100% - 80px) !important;
+  }
+  
+  .ball-shadow {
+    width: 32px;
+    height: 8px;
+    bottom: 48px;
+  }
+  
+  .live-measurements {
+    grid-template-columns: repeat(2, 1fr);
+    min-width: 200px;
+  }
+  
+  .bounce-history {
+    grid-template-columns: 1fr;
+  }
+  
+  .measurement-card.bounce-count {
+    grid-column: 1 / -1;
+  }
+
+  .impact-particles {
+    width: 50px;
+    height: 25px;
+  }
+  
+  .particle {
+    width: 3px;
+    height: 3px;
+  }
+
+  .surface-contact {
+    font-size: 0.6em;
+  }
+
   @keyframes ballSquash {
     0% {
       transform: translateX(-50%) scale(1, 1);
@@ -1080,160 +1675,13 @@
     min-width: auto;
     width: 100%;
   }
-}
-
-/* Enhanced Ball Animations */
-.test-ball {
-  /* ... existing styles ... */
-  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-}
-
-/* Realistic ball squash based on impact velocity */
-.test-ball.impact {
-  animation: ballSquash 0.3s ease-out;
-}
-
-@keyframes ballSquash {
-  0% {
-    transform: translateX(-50%) scale(1, 1);
+  
+  .live-measurements {
+    grid-template-columns: 1fr;
+    min-width: 150px;
   }
-  30% {
-    transform: translateX(-50%) scale(1.3, 0.7);
+  
+  .bounce-formula {
+    font-size: 0.65em;
   }
-  70% {
-    transform: translateX(-50%) scale(0.9, 1.1);
-  }
-  100% {
-    transform: translateX(-50%) scale(1, 1);
-  }
-}
-
-.test-surface.impact-effect {
-  animation: surfaceImpact 0.3s ease-out;
-}
-
-@keyframes surfaceImpact {
-  0% {
-    transform: scaleY(1);
-    box-shadow: 0 0 0 rgba(76, 81, 191, 0);
-  }
-  30% {
-    transform: scaleY(0.95);
-    box-shadow: 0 0 25px rgba(76, 81, 191, 0.5);
-  }
-  100% {
-    transform: scaleY(1);
-    box-shadow: 0 0 0 rgba(76, 81, 191, 0);
-  }
-}
-
-/* Add subtle rotation for realism */
-@keyframes ballRotation {
-  0% {
-    transform: translateX(-50%) rotate(0deg);
-  }
-  100% {
-    transform: translateX(-50%) rotate(360deg);
-  }
-}
-
-.test-ball.loading {
-  animation: 
-    ballPulse 1.5s ease-in-out infinite,
-    ballRotation 3s linear infinite;
-}
-
-/* Enhanced completion animation */
-.test-ball.complete {
-  animation: celebrationBounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-@keyframes celebrationBounce {
-  0%, 100% {
-    transform: translateX(-50%) scale(1);
-    box-shadow: 
-      0 6px 20px rgba(0, 0, 0, 0.25),
-      inset -5px -5px 10px rgba(0, 0, 0, 0.3),
-      inset 5px 5px 10px rgba(255, 255, 255, 0.2);
-  }
-  25% {
-    transform: translateX(-50%) scale(1.15) translateY(-5px);
-    box-shadow: 
-      0 12px 25px rgba(76, 81, 191, 0.5),
-      inset -3px -3px 6px rgba(0, 0, 0, 0.2),
-      inset 3px 3px 6px rgba(255, 255, 255, 0.3);
-  }
-  50% {
-    transform: translateX(-50%) scale(1.1) translateY(2px);
-  }
-  75% {
-    transform: translateX(-50%) scale(1.12) translateY(-2px);
-  }
-}
-
-/* Add these fixes to your existing BounceOrBreak.css */
-
-/* FIXED: Test Ball positioning */
-.test-ball {
-  position: absolute;
-  top: 20px; /* Initial position at top */
-  left: 50%;
-  transform: translateX(-50%);
-  width: 50px;
-  height: 50px;
-  background: var(--ball-color, #718096);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5em;
-  z-index: 10;
-  box-shadow: 
-    0 6px 20px rgba(0, 0, 0, 0.25),
-    inset -5px -5px 10px rgba(0, 0, 0, 0.3),
-    inset 5px 5px 10px rgba(255, 255, 255, 0.2);
-  transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Changed to top */
-  will-change: top; /* Changed to top */
-}
-
-/* FIXED: Ball impact animation with top property */
-.test-ball.impact {
-  animation: ballSquash 0.2s ease-out;
-}
-
-@keyframes ballSquash {
-  0% {
-    transform: translateX(-50%) scale(1, 1);
-  }
-  30% {
-    transform: translateX(-50%) scale(1.3, 0.7);
-  }
-  70% {
-    transform: translateX(-50%) scale(0.9, 1.1);
-  }
-  100% {
-    transform: translateX(-50%) scale(1, 1);
-  }
-}
-
-/* FIXED: Ensure drop chamber has proper positioning context */
-.drop-chamber {
-  position: relative;
-  height: 300px;
-  background: 
-    linear-gradient(to bottom, 
-      rgba(247, 250, 252, 0.8) 0%, 
-      rgba(237, 242, 247, 0.9) 100%),
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 19px,
-      rgba(76, 81, 191, 0.05) 19px,
-      rgba(76, 81, 191, 0.05) 20px
-    );
-  border-radius: 15px;
-  border: 3px solid #4C51BF;
-  overflow: hidden;
-  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.1);
 }
