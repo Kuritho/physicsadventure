@@ -38,7 +38,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
   const GRAVITY = 9.81;
   const PIXELS_PER_METER = 120;
   const rampLengthPixels = RAMP_LENGTH * PIXELS_PER_METER;
-  const GROUND_ROLL_DISTANCE = 1.5;
+  const GROUND_Y = 480; // Ground level in pixels
   const CAN_RADIUS = 0.05;
   const CAN_DIAMETER = 0.1; // 10cm diameter can
 
@@ -73,49 +73,44 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
   };
 
   // PERFECT POSITIONING: Calculate can's exact position on ramp
+  // NEW: 0cm at top, 200cm at bottom edge
   const calculateCanPosition = (startPointCm, angle) => {
-    const startPointMeters = startPointCm / 100; // Convert cm to meters
     const angleRad = (angle * Math.PI) / 180;
     
-    // Calculate the actual position along the ramp
-    // x = distance along the base
-    // y = height at that position
+    // Distance from START of ramp (0cm at top)
+    // If startPoint = 40cm (from edge), distance from start = 160cm = 1.6m
+    const distanceFromStart = (200 - startPointCm) / 100; // Convert to meters
     
-    // For a ramp with total length RAMP_LENGTH, the coordinates at distance 'd' are:
-    const x = startPointMeters * Math.cos(angleRad); // Horizontal distance
-    const y = startPointMeters * Math.sin(angleRad); // Vertical height
+    // Calculate the actual position along the ramp
+    const x = distanceFromStart * Math.cos(angleRad); // Horizontal distance from start
+    const y = distanceFromStart * Math.sin(angleRad); // Vertical height from start
     
     // Convert to pixels for display
-    const xPixels = x * PIXELS_PER_METER;
-    const yPixels = y * PIXELS_PER_METER;
-    
-    // Add the offset for the ramp container (32px from left, 32px from top)
-    const finalXPixels = xPixels + 32;
-    const finalYPixels = yPixels + 32;
+    const xPixels = x * PIXELS_PER_METER + 32;
+    const yPixels = y * PIXELS_PER_METER + 32;
     
     return {
-      x: finalXPixels,
-      y: finalYPixels,
+      x: xPixels,
+      y: yPixels,
       xMeters: x,
       yMeters: y,
-      distanceAlongRamp: startPointMeters
+      distanceFromStart: distanceFromStart,
+      distanceFromEdge: startPointCm / 100 // Distance to edge in meters
     };
   };
 
-  // Calculate theoretical time
-  const calculateTheoreticalTime = (startDistance, angle) => {
+  // Calculate theoretical time (distance from edge in meters)
+  const calculateTheoreticalTime = (distanceFromEdge, angle) => {
     const angleRad = (angle * Math.PI) / 180;
     const acceleration = GRAVITY * Math.sin(angleRad);
-    const distanceToRoll = RAMP_LENGTH - startDistance;
-    return Math.sqrt((2 * distanceToRoll) / acceleration);
+    return Math.sqrt((2 * distanceFromEdge) / acceleration);
   };
 
-  // Calculate theoretical velocity
-  const calculateTheoreticalVelocity = (startDistance, angle) => {
+  // Calculate theoretical velocity (distance from edge in meters)
+  const calculateTheoreticalVelocity = (distanceFromEdge, angle) => {
     const angleRad = (angle * Math.PI) / 180;
     const acceleration = GRAVITY * Math.sin(angleRad);
-    const distanceToRoll = RAMP_LENGTH - startDistance;
-    return Math.sqrt(2 * acceleration * distanceToRoll);
+    return Math.sqrt(2 * acceleration * distanceFromEdge);
   };
 
   // Update can position based on current settings
@@ -142,34 +137,33 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
       const elapsed = (currentTime - startTimeRef.current) / 1000;
       const angleRad = (rampAngle * Math.PI) / 180;
       const acceleration = GRAVITY * Math.sin(angleRad);
-      const startDistanceMeters = startPoint / 100;
-      const totalRampDistance = RAMP_LENGTH - startDistanceMeters;
+      const distanceFromEdge = startPoint / 100; // Distance to edge from starting point
+      const distanceFromStart = (200 - startPoint) / 100; // Distance from start in meters
       
       if (phase === 'ramp') {
-        const timeToBottom = Math.sqrt(2 * totalRampDistance / acceleration);
+        const timeToEdge = Math.sqrt(2 * distanceFromEdge / acceleration);
         
-        if (elapsed < timeToBottom) {
-          const currentDistance = startDistanceMeters + 0.5 * acceleration * elapsed * elapsed;
+        if (elapsed < timeToEdge) {
+          const currentDistance = 0.5 * acceleration * elapsed * elapsed;
           const currentVelocity = acceleration * elapsed;
           
           setTime(elapsed);
-          setDistance(currentDistance - startDistanceMeters);
+          setDistance(currentDistance);
           setVelocity(currentVelocity);
           
           if (canRef.current) {
-            const progress = elapsed / timeToBottom;
-            const currentDistanceMeters = startDistanceMeters + progress * totalRampDistance;
+            const progress = elapsed / timeToEdge;
+            const currentDistanceFromStart = distanceFromStart + progress * distanceFromEdge;
             
-            // Calculate PERFECT position on ramp
-            const x = currentDistanceMeters * Math.cos(angleRad);
-            const y = currentDistanceMeters * Math.sin(angleRad);
+            // Calculate position on ramp (from start)
+            const x = currentDistanceFromStart * Math.cos(angleRad);
+            const y = currentDistanceFromStart * Math.sin(angleRad);
             
             const xPixels = x * PIXELS_PER_METER + 32;
             const yPixels = y * PIXELS_PER_METER + 32;
             
             // Calculate rotation
-            const distanceRolled = currentDistanceMeters - startDistanceMeters;
-            const rotationAngle = (distanceRolled / CAN_RADIUS) * (180 / Math.PI);
+            const rotationAngle = (currentDistance / CAN_RADIUS) * (180 / Math.PI);
             
             // Add slight bounce
             const bounce = Math.abs(Math.sin(progress * Math.PI * 8)) * 1;
@@ -181,172 +175,191 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
           return;
         }
         
-        // Reached bottom of ramp
-        const timeToBottomFinal = timeToBottom;
-        const finalVelocity = acceleration * timeToBottomFinal;
-        
-        setTime(timeToBottomFinal);
-        setDistance(totalRampDistance);
-        setVelocity(finalVelocity);
+        // Reached edge of ramp - transition to FALLING
+        const velocityAtEdge = acceleration * timeToEdge;
+        setTime(timeToEdge);
+        setDistance(distanceFromEdge);
+        setVelocity(velocityAtEdge);
         setPhase('falling');
         
+        // Position can at exact edge of ramp (200cm from start = RAMP_LENGTH)
+        const rampEndX = RAMP_LENGTH * Math.cos(angleRad);
+        const rampEndY = RAMP_LENGTH * Math.sin(angleRad);
+        const xPixels = rampEndX * PIXELS_PER_METER + 32;
+        const yPixels = rampEndY * PIXELS_PER_METER + 32;
+        const rotationAngle = (distanceFromEdge / CAN_RADIUS) * (180 / Math.PI);
+        
         if (canRef.current) {
-          // Position at end of ramp
-          const x = RAMP_LENGTH * Math.cos(angleRad);
-          const y = RAMP_LENGTH * Math.sin(angleRad);
-          
-          const xPixels = x * PIXELS_PER_METER + 32;
-          const yPixels = y * PIXELS_PER_METER + 32;
-          
-          const totalDistanceRolled = totalRampDistance;
-          const rotationAngle = (totalDistanceRolled / CAN_RADIUS) * (180 / Math.PI);
-          
           canRef.current.style.transform = `translate(${xPixels}px, ${yPixels}px) rotate(${rotationAngle}deg)`;
         }
         
+        // Continue to falling animation
         animationRef.current = requestAnimationFrame(animate);
         
       } else if (phase === 'falling') {
-        // FALLING PHASE - Realistic parabolic motion
-        const timeToBottom = Math.sqrt(2 * totalRampDistance / acceleration);
-        const fallStartTime = timeToBottom;
+        // FALLING PHASE - SIMPLE AND GUARANTEED TO WORK
+        const timeToEdge = Math.sqrt(2 * distanceFromEdge / acceleration);
+        const fallStartTime = timeToEdge;
         const fallTime = elapsed - fallStartTime;
-        const maxFallTime = 0.6; // Increased for more realistic falling
         
-        if (fallTime < maxFallTime && canRef.current) {
-          const initialVelocity = acceleration * timeToBottom;
-          
-          // Calculate position at end of ramp (launch point)
-          const launchX = RAMP_LENGTH * Math.cos(angleRad);
-          const launchY = RAMP_LENGTH * Math.sin(angleRad);
-          
-          // Initial velocity components
-          const initialVelocityX = initialVelocity * Math.cos(angleRad);
-          const initialVelocityY = -initialVelocity * Math.sin(angleRad); // Negative because we're falling DOWN from ramp
-          
-          // Projectile motion equations (x stays horizontal, y falls downward)
-          // Horizontal motion (constant velocity)
-          const xFall = launchX + (initialVelocityX * fallTime);
-          // Vertical motion (accelerated by gravity)
-          const yFall = launchY + (initialVelocityY * fallTime) + (0.5 * GRAVITY * fallTime * fallTime);
-          
-          const xPixels = xFall * PIXELS_PER_METER + 32;
-          const yPixels = yFall * PIXELS_PER_METER + 32;
-          
-          // Continue rotation during fall
-          const totalDistanceRolled = totalRampDistance + (initialVelocityX * fallTime);
-          const rotationAngle = (totalDistanceRolled / CAN_RADIUS) * (180 / Math.PI);
-          
-          canRef.current.style.transform = `translate(${xPixels}px, ${yPixels}px) rotate(${rotationAngle}deg)`;
-          
-          // Update velocity during fall
-          const fallVelocityX = initialVelocityX;
-          const fallVelocityY = initialVelocityY + GRAVITY * fallTime;
-          const fallVelocity = Math.sqrt(fallVelocityX * fallVelocityX + fallVelocityY * fallVelocityY);
-          setVelocity(fallVelocity);
-          setTime(elapsed);
-          setDistance(totalRampDistance + initialVelocityX * fallTime);
-          
-          animationRef.current = requestAnimationFrame(animate);
-          return;
-        }
+        // Starting position at ramp end
+        const startX = RAMP_LENGTH * Math.cos(angleRad);
+        const startY = RAMP_LENGTH * Math.sin(angleRad);
         
-        // Falling complete, transition to ground
-        setPhase('ground');
+        // Velocity when leaving ramp
+        const exitVelocity = acceleration * timeToEdge;
+        const velocityX = exitVelocity * Math.cos(angleRad);
+        const velocityY = -exitVelocity * Math.sin(angleRad); // Negative = downward
         
-        if (canRef.current) {
-          // Calculate final falling position
-          const initialVelocity = acceleration * timeToBottom;
-          const initialVelocityX = initialVelocity * Math.cos(angleRad);
-          const initialVelocityY = -initialVelocity * Math.sin(angleRad);
+        // Calculate new position (simple projectile motion)
+        const newX = startX + (velocityX * fallTime);
+        const newY = startY + (velocityY * fallTime) + (0.5 * GRAVITY * fallTime * fallTime);
+        
+        // Convert to pixels
+        const xPixels = newX * PIXELS_PER_METER + 32;
+        const yPixels = newY * PIXELS_PER_METER + 32;
+        
+        // Calculate ground level in meters
+        const groundLevelMeters = (GROUND_Y - 32) / PIXELS_PER_METER;
+        
+        // Check if can has hit the ground
+        if (newY >= groundLevelMeters - 0.05) {
+          // HIT GROUND - transition to ground phase
+          setPhase('ground');
           
-          const finalX = RAMP_LENGTH * Math.cos(angleRad) + (initialVelocityX * maxFallTime);
-          const finalY = RAMP_LENGTH * Math.sin(angleRad) + (initialVelocityY * maxFallTime) + (0.5 * GRAVITY * maxFallTime * maxFallTime);
+          // Calculate exact ground hit time using quadratic formula
+          const a = 0.5 * GRAVITY;
+          const b = velocityY;
+          const c = startY - groundLevelMeters;
+          const discriminant = b * b - 4 * a * c;
           
-          const xPixels = finalX * PIXELS_PER_METER + 32;
-          const yPixels = finalY * PIXELS_PER_METER + 32;
+          let groundHitTime = 0;
+          if (discriminant >= 0) {
+            groundHitTime = (-b - Math.sqrt(discriminant)) / (2 * a);
+          } else {
+            groundHitTime = 0.5; // Fallback value
+          }
           
-          const totalDistanceRolled = totalRampDistance + (initialVelocityX * maxFallTime);
-          const rotationAngle = (totalDistanceRolled / CAN_RADIUS) * (180 / Math.PI);
+          // Ground hit position
+          const groundHitX = startX + (velocityX * groundHitTime);
+          const groundHitXPixels = groundHitX * PIXELS_PER_METER + 32;
           
-          canRef.current.style.transform = `translate(${xPixels}px, ${yPixels}px) rotate(${rotationAngle}deg)`;
+          // Update position to ground
+          const totalDistance = distanceFromEdge + (velocityX * groundHitTime);
+          const rotationAngle = (totalDistance / CAN_RADIUS) * (180 / Math.PI);
+          
+          if (canRef.current) {
+            // Add bounce effect
+            const bounce = 15 * Math.exp(-groundHitTime * 5);
+            canRef.current.style.transform = `translate(${groundHitXPixels}px, ${GROUND_Y - 20 - bounce}px) rotate(${rotationAngle}deg)`;
+          }
+          
+          // Update displayed values
+          const groundHitVelocityX = velocityX;
+          const groundHitVelocityY = velocityY + GRAVITY * groundHitTime;
+          const groundHitVelocity = Math.sqrt(groundHitVelocityX * groundHitVelocityX + groundHitVelocityY * groundHitVelocityY);
+          
+          setVelocity(groundHitVelocity);
+          setTime(fallStartTime + groundHitTime);
+          setDistance(totalDistance);
+          
+        } else {
+          // STILL FALLING - update position
+          if (canRef.current) {
+            const totalDistance = distanceFromEdge + (velocityX * fallTime);
+            const rotationAngle = (totalDistance / CAN_RADIUS) * (180 / Math.PI);
+            
+            canRef.current.style.transform = `translate(${xPixels}px, ${yPixels}px) rotate(${rotationAngle}deg)`;
+            
+            // Update velocity during fall
+            const currentVelocityX = velocityX;
+            const currentVelocityY = velocityY + GRAVITY * fallTime;
+            const currentVelocity = Math.sqrt(currentVelocityX * currentVelocityX + currentVelocityY * currentVelocityY);
+            
+            setVelocity(currentVelocity);
+            setTime(elapsed);
+            setDistance(totalDistance);
+          }
         }
         
         animationRef.current = requestAnimationFrame(animate);
         
       } else if (phase === 'ground') {
         // GROUND ROLLING PHASE
-        const timeToBottom = Math.sqrt(2 * totalRampDistance / acceleration);
-        const fallTime = 0.6; // Time spent falling
-        const groundStartTime = timeToBottom + fallTime;
-        const groundTime = elapsed - groundStartTime;
-        const maxGroundTime = 1.5;
+        const timeToEdge = Math.sqrt(2 * distanceFromEdge / acceleration);
+        const groundRollTime = elapsed - timeToEdge - 0.5; // Start after falling
         
-        if (groundTime < maxGroundTime && canRef.current) {
-          const initialVelocity = acceleration * timeToBottom;
-          const initialVelocityX = initialVelocity * Math.cos(angleRad);
+        if (groundRollTime < 2.0 && canRef.current) {
+          // Simple ground rolling with friction
+          const initialVelocity = acceleration * timeToEdge;
+          const velocityX = initialVelocity * Math.cos(angleRad);
           
-          // Ground deceleration (friction)
-          const frictionCoefficient = 0.3; // Realistic friction for rolling on ground
-          const groundDeceleration = frictionCoefficient * GRAVITY;
+          // Friction deceleration
+          const friction = 0.3;
+          const deceleration = friction * GRAVITY;
           
-          // Calculate launch position after falling
-          const launchX = RAMP_LENGTH * Math.cos(angleRad);
-          const launchY = RAMP_LENGTH * Math.sin(angleRad);
-          const fallVelocityY = -initialVelocity * Math.sin(angleRad) + GRAVITY * fallTime;
+          // Calculate ground hit position
+          const startX = RAMP_LENGTH * Math.cos(angleRad);
+          const startY = RAMP_LENGTH * Math.sin(angleRad);
+          const groundLevelMeters = (GROUND_Y - 32) / PIXELS_PER_METER;
+          const velocityY = -initialVelocity * Math.sin(angleRad);
           
-          // Final falling position (when it hits ground)
-          const groundHitY = launchY + (-initialVelocity * Math.sin(angleRad) * fallTime) + (0.5 * GRAVITY * fallTime * fallTime);
-          const groundHitX = launchX + (initialVelocityX * fallTime);
-          
-          // Ground rolling motion (decelerates to stop)
-          const groundDistance = Math.max(0, initialVelocityX * groundTime - 0.5 * groundDeceleration * groundTime * groundTime);
-          const currentGroundVelocity = Math.max(0, initialVelocityX - groundDeceleration * groundTime);
-          
-          const xGround = groundHitX + groundDistance;
-          const yGround = groundHitY; // Stays at ground level
-          
-          const xPixels = xGround * PIXELS_PER_METER + 32;
-          const yPixels = yGround * PIXELS_PER_METER + 32;
-          
-          const totalDistanceRolled = totalRampDistance + (initialVelocityX * fallTime) + groundDistance;
-          const rotationAngle = (totalDistanceRolled / CAN_RADIUS) * (180 / Math.PI);
-          
-          // Add slight bounce on ground hit
-          let bounce = 0;
-          if (groundTime < 0.1) {
-            bounce = 2 * Math.sin(groundTime * Math.PI * 10);
+          // Calculate falling time to ground
+          const a = 0.5 * GRAVITY;
+          const b = velocityY;
+          const c = startY - groundLevelMeters;
+          const discriminant = b * b - 4 * a * c;
+          let fallTimeToGround = 0.5;
+          if (discriminant >= 0) {
+            fallTimeToGround = (-b - Math.sqrt(discriminant)) / (2 * a);
           }
           
-          canRef.current.style.transform = `translate(${xPixels}px, ${yPixels - bounce}px) rotate(${rotationAngle}deg)`;
+          // Ground hit position
+          const groundHitX = startX + (velocityX * fallTimeToGround);
           
-          // Update displayed velocity
-          setVelocity(currentGroundVelocity);
+          // Ground rolling distance
+          const decelTime = Math.min(groundRollTime, velocityX / deceleration);
+          const groundDistance = velocityX * decelTime - 0.5 * deceleration * decelTime * decelTime;
+          const currentVelocity = Math.max(0, velocityX - deceleration * decelTime);
+          
+          // Current position
+          const currentX = groundHitX + groundDistance;
+          const xPixels = currentX * PIXELS_PER_METER + 32;
+          
+          // Total distance and rotation
+          const totalDistance = distanceFromEdge + (velocityX * fallTimeToGround) + groundDistance;
+          const rotationAngle = (totalDistance / CAN_RADIUS) * (180 / Math.PI);
+          
+          // Bounce effect
+          let bounce = 0;
+          if (groundRollTime < 0.3) {
+            bounce = 8 * Math.sin(groundRollTime * Math.PI * 10) * Math.exp(-groundRollTime * 10);
+          }
+          
+          canRef.current.style.transform = `translate(${xPixels}px, ${GROUND_Y - 20 - bounce}px) rotate(${rotationAngle}deg)`;
+          
+          setVelocity(currentVelocity);
           setTime(elapsed);
-          setDistance(totalRampDistance + initialVelocityX * fallTime + groundDistance);
+          setDistance(totalDistance);
           
           animationRef.current = requestAnimationFrame(animate);
           return;
         }
         
-        // Animation complete
-        const timeToBottomFinal = Math.sqrt(2 * totalRampDistance / acceleration);
-        const theoreticalTime = calculateTheoreticalTime(startDistanceMeters, rampAngle);
-        const theoreticalVelocity = calculateTheoreticalVelocity(startDistanceMeters, rampAngle);
-        
-        setTime(timeToBottomFinal + 0.6 + 1.5); // Ramp time + falling + rolling
-        setDistance(totalRampDistance);
-        setVelocity(0); // Comes to rest
-        
-        const experimentalAcceleration = (2 * totalRampDistance) / (timeToBottomFinal * timeToBottomFinal);
+        // ANIMATION COMPLETE
+        const theoreticalTime = calculateTheoreticalTime(distanceFromEdge, rampAngle);
+        const theoreticalVelocity = calculateTheoreticalVelocity(distanceFromEdge, rampAngle);
+        const experimentalAcceleration = (2 * distanceFromEdge) / (timeToEdge * timeToEdge);
         const theoreticalAcceleration = GRAVITY * Math.sin(angleRad);
         const error = Math.abs(theoreticalAcceleration - experimentalAcceleration) / theoreticalAcceleration * 100;
+        
+        setVelocity(0);
         
         const newTrial = {
           startPoint: startPoint,
           angle: rampAngle,
-          time: timeToBottomFinal,
-          distance: totalRampDistance,
+          time: timeToEdge,
+          distance: distanceFromEdge,
           theoreticalTime: theoreticalTime,
           theoreticalVelocity: theoreticalVelocity,
           acceleration: {
@@ -391,13 +404,13 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
     }
     
     if (time > 0 && distance > 0) {
-      const startDistanceMeters = startPoint / 100;
+      const distanceFromEdge = startPoint / 100;
       const angleRad = (rampAngle * Math.PI) / 180;
       const theoreticalAcceleration = GRAVITY * Math.sin(angleRad);
       const experimentalAcceleration = (2 * distance) / (time * time);
       const error = Math.abs(theoreticalAcceleration - experimentalAcceleration) / theoreticalAcceleration * 100;
-      const theoreticalTime = calculateTheoreticalTime(startDistanceMeters, rampAngle);
-      const theoreticalVelocity = calculateTheoreticalVelocity(startDistanceMeters, rampAngle);
+      const theoreticalTime = calculateTheoreticalTime(distanceFromEdge, rampAngle);
+      const theoreticalVelocity = calculateTheoreticalVelocity(distanceFromEdge, rampAngle);
       
       const newTrial = {
         startPoint: startPoint,
@@ -511,7 +524,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
     if (trials.length >= 5) {
       setShowAssessment(true);
     } else {
-      alert('Please complete trials from all 5 starting points (40cm, 80cm, 120cm, 160cm, 200cm) to analyze the data!');
+      alert('Please complete trials from all 5 starting points (200cm, 160cm, 120cm, 80cm, 40cm) to analyze the data!');
     }
   };
 
@@ -653,7 +666,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
     },
     simulationBox: {
       position: 'relative',
-      height: '500px',
+      height: '550px',
       overflow: 'visible',
       borderRadius: '8px',
       background: 'linear-gradient(to bottom, rgba(12, 74, 110, 0.2), rgba(20, 83, 45, 0.2))'
@@ -1209,48 +1222,75 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
     
     return (
       <>
-        {/* Platform edge line */}
+        {/* Platform edge line - VERY VISIBLE */}
         <div style={{
           position: 'absolute',
-          top: `${yPixels}px`,
+          top: `${yPixels - 5}px`,
           left: `${xPixels}px`,
-          width: '4px',
-          height: '80px',
-          background: '#dc2626',
+          width: '8px',
+          height: `${GROUND_Y - yPixels + 20}px`,
+          background: 'linear-gradient(to bottom, #ef4444 0%, #ef4444 20%, #dc2626 100%)',
           zIndex: 3,
-          boxShadow: '0 0 8px rgba(220, 38, 38, 0.7)'
+          boxShadow: '0 0 15px rgba(220, 38, 38, 0.9)',
+          borderRadius: '4px 0 0 4px'
         }}></div>
         
-        {/* Danger zone */}
+        {/* Edge warning triangle */}
         <div style={{
           position: 'absolute',
-          top: `${yPixels}px`,
-          left: `${xPixels}px`,
-          width: '200px',
-          height: '120px',
-          background: 'linear-gradient(90deg, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0) 100%)',
-          zIndex: 1,
-          pointerEvents: 'none'
+          top: `${yPixels - 15}px`,
+          left: `${xPixels + 10}px`,
+          width: '0',
+          height: '0',
+          borderLeft: '15px solid #ef4444',
+          borderTop: '10px solid transparent',
+          borderBottom: '10px solid transparent',
+          filter: 'drop-shadow(0 0 8px rgba(239, 68, 68, 0.8))',
+          zIndex: 4
         }}></div>
         
-        {/* Warning label */}
+        {/* Danger zone label */}
         <div style={{
           position: 'absolute',
-          top: `${yPixels + 90}px`,
+          top: `${yPixels + 50}px`,
           left: `${xPixels + 40}px`,
-          background: 'rgba(220, 38, 38, 0.9)',
+          background: 'rgba(239, 68, 68, 0.9)',
           color: 'white',
-          padding: '4px 12px',
-          borderRadius: '4px',
-          fontSize: '12px',
+          padding: '8px 16px',
+          borderRadius: '8px',
+          fontSize: '14px',
           fontWeight: 'bold',
           zIndex: 4,
           pointerEvents: 'none',
           border: '2px solid white',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+          transform: 'rotate(-5deg)'
         }}>
-          EDGE - CAN WILL FALL!
+          ⚠️ FALLING ZONE
         </div>
+        
+        {/* Falling animation indicator when can is falling */}
+        {isRolling && phase === 'falling' && (
+          <div style={{
+            position: 'absolute',
+            top: `${yPixels}px`,
+            left: `${xPixels + 20}px`,
+            width: '4px',
+            height: `${GROUND_Y - yPixels}px`,
+            background: 'linear-gradient(to bottom, #fbbf24, #ef4444)',
+            zIndex: 2,
+            opacity: 0.6,
+            animation: 'fallingArrow 1s infinite'
+          }}>
+            <style>{`
+              @keyframes fallingArrow {
+                0% { opacity: 0.3; }
+                50% { opacity: 0.8; }
+                100% { opacity: 0.3; }
+              }
+            `}</style>
+          </div>
+        )}
       </>
     );
   };
@@ -1261,8 +1301,8 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
         <button style={styles.backButton} onClick={() => navigate && navigate('menu')}>
           <span>←</span> Back to Menu
         </button>
-        <h1 style={styles.title}>📐 Slopes of Acceleration - Perfect Positioning</h1>
-        <p style={styles.subtitle}>100% accurate can positioning at every starting point and ramp configuration</p>
+        <h1 style={styles.title}>📐 Slopes of Acceleration - NEW: 0cm at Top, 200cm at Edge</h1>
+        <p style={styles.subtitle}>Now: 200cm at top of ramp, 40cm at edge. Can rolls DOWN from selected position!</p>
       </div>
 
       <div style={styles.section}>
@@ -1276,12 +1316,11 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
             }}></div>
             <div style={styles.ramp}>
               <div style={styles.rampSurface}>
-                {/* PERFECT distance markers */}
-                {[40, 80, 120, 160, 200].map((cm, i) => {
-                  const distanceMeters = cm / 100;
+                {/* PERFECT distance markers - REVERSED ORDER: 200cm at top, 40cm at edge */}
+                {[200, 160, 120, 80, 40].map((cm, i) => {
+                  const distanceFromStart = (200 - cm) / 100; // Distance from start in meters
                   const angleRad = (rampAngle * Math.PI) / 180;
-                  const x = distanceMeters * Math.cos(angleRad);
-                  const position = (x / (RAMP_LENGTH * Math.cos(angleRad))) * 100;
+                  const position = (distanceFromStart / RAMP_LENGTH) * 100;
                   
                   return (
                     <React.Fragment key={i}>
@@ -1291,9 +1330,11 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                           top: 0,
                           bottom: 0,
                           width: '3px',
-                          background: 'rgba(255, 255, 255, 0.8)',
+                          background: cm === startPoint ? '#4ade80' : 'rgba(255, 255, 255, 0.8)',
                           left: `${position}%`,
-                          transform: 'rotate(0deg)'
+                          transform: 'rotate(0deg)',
+                          boxShadow: cm === startPoint ? '0 0 8px #4ade80' : 'none',
+                          zIndex: cm === startPoint ? 5 : 3
                         }}
                       ></div>
                       <div 
@@ -1301,10 +1342,15 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                           ...styles.distanceMarker,
                           top: '-20px',
                           left: `${position}%`,
-                          transform: `translateX(-50%) rotate(${-rampAngle}deg)`
+                          transform: `translateX(-50%) rotate(${-rampAngle}deg)`,
+                          background: cm === startPoint ? '#4ade80' : 'rgba(255, 255, 255, 0.9)',
+                          color: cm === startPoint ? 'white' : '#1e1b4b',
+                          fontWeight: cm === startPoint ? 'bold' : 'normal',
+                          border: cm === startPoint ? '2px solid white' : '1px solid rgba(0, 0, 0, 0.2)'
                         }}
                       >
                         {cm}cm
+                        {cm === startPoint && ' ✓'}
                       </div>
                     </React.Fragment>
                   );
@@ -1315,6 +1361,36 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
           
           <PlatformEdge />
           
+          {/* Ramp Orientation Guide */}
+          <div style={{
+            position: 'absolute',
+            top: '290px',
+            left: '18px',
+            background: 'rgba(0, 0, 0, 0.7)',
+            padding: '8px',
+            borderRadius: '8px',
+            fontSize: '11px',
+            zIndex: 4,
+            pointerEvents: 'none',
+            border: '1px solid #4ade80'
+          }}>
+            <div style={{color: '#4ade80', fontWeight: 'bold', marginBottom: '4px'}}>
+              RAMP ORIENTATION:
+            </div>
+            <div style={{display: 'flex', alignItems: 'center', marginBottom: '2px'}}>
+              <div style={{width: '20px', height: '1px', background: '#4ade80', marginRight: '4px'}}></div>
+              <span>0cm (TOP)</span>
+            </div>
+            <div style={{display: 'flex', alignItems: 'center', marginBottom: '2px'}}>
+              <div style={{width: '20px', height: '1px', background: '#fbbf24', marginRight: '4px'}}></div>
+              <span>{startPoint}cm ✓ (CAN)</span>
+            </div>
+            <div style={{display: 'flex', alignItems: 'center'}}>
+              <div style={{width: '20px', height: '1px', background: '#ef4444', marginRight: '4px'}}></div>
+              <span>200cm (EDGE)</span>
+            </div>
+          </div>
+          
           <div ref={canRef} style={styles.can}>
             <div style={styles.canLabel}>CAN</div>
           </div>
@@ -1322,18 +1398,24 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
           {/* Position verification */}
           <div style={{...styles.marker, top: '8px', left: '16px', background: '#4ade80'}}>
             ✅ PERFECT POSITION:<br/>
-            Start: {startPoint}cm ({startPoint/100}m)<br/>
+            Start: {startPoint}cm from edge<br/>
+            Position: {((200 - startPoint) / 100).toFixed(2)}m from start<br/>
             X: {canPosition.xMeters.toFixed(3)}m, Y: {canPosition.yMeters.toFixed(3)}m
           </div>
           <div style={{...styles.marker, bottom: '400px', right: '16px', background: '#3b82f6'}}>
-            RAMP END: 200cm (2m)<br/>
+            RAMP LENGTH: 200cm (2m)<br/>
             Angle: {rampAngle.toFixed(1)}°
           </div>
           <div style={styles.angleDisplay}>
             RAMP DIMENSIONS:<br/>
             Height: {actualHeight.toFixed(1)}cm<br/>
             Base: {actualBase.toFixed(1)}cm<br/>
-            Length: 200.0cm
+            Length: 200.0cm<br/>
+            <span style={{color: '#4ade80', fontSize: '11px'}}>
+              • 0cm at top<br/>
+              • {startPoint}cm from edge ✓<br/>
+              • 200cm at bottom
+            </span>
           </div>
           
           {/* Status indicator */}
@@ -1360,10 +1442,10 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
       </div>
 
       <div style={styles.section}>
-        <h3 style={styles.sectionTitle}>Procedure Setup - 100% Accurate</h3>
+        <h3 style={styles.sectionTitle}>Procedure Setup - NEW ORIENTATION</h3>
         
         <div style={{marginBottom: '16px'}}>
-          <label style={styles.label}>Starting Point: {startPoint}cm ({startPoint/100}m)</label>
+          <label style={styles.label}>Starting Point: {startPoint}cm from edge ({(200 - startPoint)}cm from top)</label>
           <input
             type="range"
             min="40"
@@ -1375,14 +1457,21 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
             style={styles.slider}
           />
           <div style={styles.presetButtons}>
-            {[40, 80, 120, 160, 200].map(point => (
+            {[200, 160, 120, 80, 40].map(point => (
               <button 
                 key={point}
                 onClick={() => { setStartPoint(point); }} 
                 disabled={isRolling}
-                style={{...styles.presetBtn, opacity: isRolling ? 0.5 : 1}}
+                style={{
+                  ...styles.presetBtn, 
+                  opacity: isRolling ? 0.5 : 1,
+                  background: point === startPoint ? '#4ade80' : 'rgba(168, 85, 247, 0.3)',
+                  color: point === startPoint ? 'white' : 'white',
+                  fontWeight: point === startPoint ? 'bold' : 'normal'
+                }}
               >
-                {point}cm ({point/100}m)
+                {point}cm from edge
+                {point === startPoint && ' ✓'}
               </button>
             ))}
           </div>
@@ -1428,12 +1517,12 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
         </div>
 
         <div style={{background: 'rgba(74, 222, 128, 0.3)', padding: '12px', borderRadius: '8px', marginBottom: '16px', border: '2px solid #4ade80'}}>
-          <p style={{margin: '0 0 8px 0', fontWeight: 'bold', color: '#4ade80'}}>✅ PERFECT POSITIONING VERIFIED:</p>
+          <p style={{margin: '0 0 8px 0', fontWeight: 'bold', color: '#4ade80'}}>✅ NEW RAMP ORIENTATION:</p>
           <p style={{margin: '0 0 4px 0', fontSize: '14px'}}>
-            • Starting Point: {startPoint}cm along ramp<br/>
-            • Horizontal Position: {canPosition.xMeters.toFixed(3)}m from start<br/>
-            • Vertical Height: {canPosition.yMeters.toFixed(3)}m from ground<br/>
-            • Distance along ramp: {canPosition.distanceAlongRamp.toFixed(3)}m<br/>
+            • 0cm mark at TOP of ramp (start)<br/>
+            • 200cm mark at BOTTOM edge of ramp<br/>
+            • Starting point: {startPoint}cm from edge<br/>
+            • Distance to roll: {(startPoint / 100).toFixed(2)} meters<br/>
             • CAN IS PERFECTLY PLACED ON RAMP SURFACE
           </p>
         </div>
@@ -1464,6 +1553,21 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
             style={{...styles.button, ...styles.buttonReset}}
           >
             🔄 Reset
+          </button>
+          {/* DEBUG BUTTON */}
+          <button 
+            onClick={() => {
+              console.log('DEBUG INFO:');
+              console.log('Phase:', phase);
+              console.log('Is Rolling:', isRolling);
+              console.log('Time:', time);
+              console.log('Angle:', rampAngle);
+              console.log('Start Point:', startPoint);
+              console.log('Distance from edge:', startPoint / 100);
+            }}
+            style={{...styles.button, background: '#8b5cf6', color: 'white', gridColumn: '1 / -1'}}
+          >
+            🐛 Debug Info
           </button>
         </div>
 
@@ -1496,20 +1600,25 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
       <div style={styles.section}>
         <h3 style={styles.sectionTitle}>Theoretical Predictions</h3>
         <div style={styles.predictionRow}>
-          <span style={styles.predictionLabel}>Distance to roll:</span>
-          <strong>{((200 - startPoint) / 100).toFixed(3)} m</strong>
+          <span style={styles.predictionLabel}>Distance to roll to edge:</span>
+          <strong>{(startPoint / 100).toFixed(3)} m</strong>
         </div>
         <div style={styles.predictionRow}>
           <span style={styles.predictionLabel}>Acceleration (g·sinθ):</span>
           <strong>{theoreticalAcceleration.toFixed(3)} m/s²</strong>
         </div>
         <div style={styles.predictionRow}>
-          <span style={styles.predictionLabel}>Theoretical Time:</span>
+          <span style={styles.predictionLabel}>Theoretical Time to edge:</span>
           <strong>{theoreticalTime.toFixed(3)} s</strong>
         </div>
         <div style={styles.predictionRow}>
-          <span style={styles.predictionLabel}>Theoretical Velocity:</span>
+          <span style={styles.predictionLabel}>Theoretical Velocity at edge:</span>
           <strong>{theoreticalVelocity.toFixed(3)} m/s</strong>
+        </div>
+        <div style={{marginTop: '12px', padding: '8px', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '8px'}}>
+          <p style={{margin: 0, fontSize: '12px', color: '#fbbf24'}}>
+            💡 <strong>Note:</strong> The can will fall under gravity after leaving the ramp. Falling time depends on launch height and velocity.
+          </p>
         </div>
       </div>
 
@@ -1522,7 +1631,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
               <thead>
                 <tr>
                   <th style={styles.th}>#</th>
-                  <th style={styles.th}>Start (cm)</th>
+                  <th style={styles.th}>Start (cm from edge)</th>
                   <th style={styles.th}>Angle</th>
                   <th style={styles.th}>Time (s)</th>
                   <th style={styles.th}>Theory Time</th>
@@ -1940,7 +2049,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                 </p>
                 
                 <div style={styles.statCard}>
-                  <div style={styles.statLabel}>Average Time to Bottom</div>
+                  <div style={styles.statLabel}>Average Time to Edge</div>
                   <div>
                     <span style={styles.statValue}>{stats.avgTime.toFixed(3)}</span>
                     <span style={styles.statUnit}>seconds</span>
@@ -2085,8 +2194,8 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
 
               const angleRad = (angle * Math.PI) / 180;
               const theoreticalAccel = GRAVITY * Math.sin(angleRad);
-              const startDistanceMeters = startPoint / 100;
-              const experimentalAccel = (2 * (RAMP_LENGTH - startDistanceMeters)) / (time * time);
+              const distanceFromEdge = startPoint / 100;
+              const experimentalAccel = (2 * distanceFromEdge) / (time * time);
               const error = Math.abs(theoreticalAccel - experimentalAccel) / theoreticalAccel * 100;
               const finalVel = experimentalAccel * time;
 
