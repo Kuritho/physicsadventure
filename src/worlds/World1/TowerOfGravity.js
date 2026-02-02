@@ -18,7 +18,6 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
     }
   });
   
-  // Assessment questions
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const questions = [
     {
@@ -67,11 +66,11 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
   const [containerHeight, setContainerHeight] = useState(0);
 
   const GRAVITY = 9.81;
-  const MAX_TOWER_HEIGHT = 100; // meters
-  const GROUND_HEIGHT = 70; // pixels
-  const SPHERE_SIZE = 40; // pixels (sphere diameter)
+  const MAX_TOWER_HEIGHT = 100; 
+  const GROUND_HEIGHT = 70; 
+  const SPHERE_SIZE = 40; 
 
-  // Calculate scale factor based on container height
+ 
   const getScaleFactor = () => {
     const availableHeight = containerHeight - GROUND_HEIGHT;
     return availableHeight / MAX_TOWER_HEIGHT;
@@ -89,14 +88,14 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
     return (2 * h) / (t * t);
   };
 
-  // Get pixel position for a given height in meters
+  
   const getPixelPosition = (heightMeters) => {
     const scale = getScaleFactor();
     return heightMeters * scale;
   };
 
   useEffect(() => {
-    // Update container height on mount and resize
+   
     const updateContainerHeight = () => {
       if (towerContainerRef.current) {
         const height = towerContainerRef.current.clientHeight;
@@ -116,7 +115,7 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
   }, []);
 
   useEffect(() => {
-    // Reset sphere position when height changes
+ 
     if (sphereRef.current) {
       const scale = getScaleFactor();
       const towerHeightPixels = getPixelPosition(currentTrialHeight);
@@ -144,13 +143,13 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
       const elapsed = (currentTime - startTimeRef.current) / 1000;
       const currentHeightMeters = 0.5 * GRAVITY * elapsed * elapsed;
       
-      // Stop when the sphere reaches or exceeds the ground
+      
       if (currentHeightMeters >= currentTrialHeight) {
         setTime(theoreticalTime);
         setHeight(currentTrialHeight);
         
         if (sphereRef.current) {
-          // Position the sphere at ground level
+          
           sphereRef.current.style.bottom = `${GROUND_HEIGHT}px`;
           sphereRef.current.style.transform = `translateX(-50%) translateY(${SPHERE_SIZE/2}px)`;
         }
@@ -182,7 +181,7 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
       setHeight(currentHeightMeters);
       
       if (sphereRef.current) {
-        // Update sphere position based on current height
+        
         const fallenPixels = currentHeightMeters * scale;
         const currentBottom = GROUND_HEIGHT + towerHeightPixels - fallenPixels;
         sphereRef.current.style.bottom = `${currentBottom}px`;
@@ -237,7 +236,7 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
     if (sphereRef.current) {
       const scale = getScaleFactor();
       const towerHeightPixels = getPixelPosition(currentTrialHeight);
-      // Reset sphere to top of pillar position
+   
       sphereRef.current.style.transform = `translateX(-50%) translateY(-${SPHERE_SIZE/2}px)`;
       sphereRef.current.style.bottom = `${GROUND_HEIGHT + towerHeightPixels}px`;
     }
@@ -307,10 +306,10 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
   const towerHeightPixels = getPixelPosition(currentTrialHeight);
   const towerHeightPercentage = (towerHeightPixels / (containerHeight - GROUND_HEIGHT)) * 100;
 
-  // Calculate sphere position
+  
   const sphereBottom = GROUND_HEIGHT + towerHeightPixels;
 
-  // Get last trial data for assessment context
+  
   const lastTrial = trials.length > 0 ? trials[trials.length - 1] : null;
 
   return (
@@ -419,10 +418,10 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
           style={styles.simulationArea}
         >
           <div style={styles.towerContainer}>
-            {/* Ground */}
+           
             <div style={styles.ground}></div>
             
-            {/* Pillar positioned on the ground */}
+           
             <div style={{
               ...styles.tower,
               height: `${towerHeightPercentage}%`,
@@ -443,7 +442,7 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
                 <div style={styles.observationDeck}></div>
               </div>
               
-              {/* Height indicator at the top of the pillar */}
+              
               <div 
                 style={{
                   ...styles.currentHeightIndicator,
@@ -456,7 +455,7 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
               </div>
             </div>
             
-            {/* Falling sphere - positioned at the top of the pillar */}
+           
             <div 
               ref={sphereRef}
               style={{
@@ -469,7 +468,7 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
               <div style={styles.sphereInner}>⚪</div>
             </div>
 
-            {/* Grid lines for reference */}
+            
             <div style={styles.referenceLines}>
               <div style={styles.referenceLine}></div>
               <div style={{...styles.referenceLine, bottom: '25%'}}></div>

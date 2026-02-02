@@ -15,7 +15,7 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
   const [feedback, setFeedback] = useState('');
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
-  const [simulationState, setSimulationState] = useState('idle'); // idle, running, completed
+  const [simulationState, setSimulationState] = useState('idle'); 
   const [simulationData, setSimulationData] = useState(null);
 
   const arenaRef = useRef(null);
@@ -24,7 +24,6 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
   const timerRef = useRef(null);
   const simulationRef = useRef(null);
 
-  // Enhanced Physics Problems with Simulation Parameters
   const phase1Problems = [
     {
       id: 1,
@@ -173,7 +172,6 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
     }
   ];
 
-  // Initialize game
   useEffect(() => {
     startPhase(currentPhase);
     startTimer();
@@ -246,12 +244,11 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
     if (type === 'correctAnswer' && currentProblem) {
       setSimulationData(currentProblem.simulation);
       
-      // Simulate different physics based on phase and problem type
       setTimeout(() => {
         setSimulationState('completed');
       }, 3000);
     } else if (type === 'timeOutAttack') {
-      // Beast attacks when time runs out
+
       setSimulationData({ type: 'beastAttack', damage: 20 });
       setTimeout(() => {
         setSimulationState('completed');
@@ -281,10 +278,8 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
       setBossHealth(prev => Math.max(0, prev - 25));
       setFeedback(`✅ Correct! ${currentProblem.explanation}`);
       
-      // Run simulation for correct answer
       runSimulation('correctAnswer');
       
-      // Boss damage animation
       if (bossRef.current) {
         bossRef.current.classList.add('taking-damage');
         setTimeout(() => {
@@ -312,7 +307,6 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
       setFeedback('❌ Incorrect! The beast counterattacks! -15 HP');
       runSimulation('counterAttack');
       
-      // Player damage animation
       if (playerRef.current) {
         playerRef.current.classList.add('taking-damage');
         setTimeout(() => {
@@ -334,7 +328,6 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
     }
   };
 
-  // Game over conditions
   useEffect(() => {
     if (playerHealth <= 0) {
       setGameStatus('lose');
@@ -362,7 +355,6 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
     onComplete();
   };
 
-  // Render Simulation based on current phase and type
   const renderSimulation = () => {
     if (simulationState !== 'running' || !simulationData) return null;
 
@@ -489,7 +481,6 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
     }
   };
 
-  // Game Over Screens
   if (gameStatus === 'win') {
     return (
       <div className="momentum-beast-game victory-screen">
@@ -543,7 +534,6 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
 
   return (
     <div className="momentum-beast-game">
-      {/* Header */}
       <div className="game-header">
         <div className="header-left">
           <button className="back-button" onClick={() => navigate('menu')}>
@@ -566,9 +556,7 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
         </div>
       </div>
 
-      {/* Battle Arena */}
       <div className="battle-arena" ref={arenaRef}>
-        {/* Boss */}
         <div className="combatant boss-combatant">
           <div ref={bossRef} className="momentum-beast phase-1">
             <div className="health-container">
@@ -586,7 +574,6 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
           </div>
         </div>
 
-        {/* Simulation Area */}
         <div className="simulation-zone">
           {simulationState === 'running' ? (
             renderSimulation()
@@ -604,7 +591,6 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
           )}
         </div>
 
-        {/* Player */}
         <div className="combatant player-combatant">
           <div ref={playerRef} className="player-character">
             <div className="health-container">
@@ -623,9 +609,7 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
         </div>
       </div>
 
-      {/* Game Interface */}
       <div className="game-interface">
-        {/* Phase Progress */}
         <div className="phase-tracker">
           <div className="phase-steps">
             {[1, 2, 3].map(phase => (
@@ -643,7 +627,6 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
           </div>
         </div>
 
-        {/* Problem Section */}
         <div className="problem-section">
           <div className="problem-header">
             <h3>Physics Challenge</h3>
@@ -687,7 +670,6 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
             </div>
           )}
 
-          {/* Physics Reference */}
           <div className="physics-reference">
             <div className="reference-title">📚 Physics Formulas</div>
             <div className="reference-content">
@@ -716,7 +698,6 @@ const TheMomentumBeast = ({ onComplete, navigate }) => {
           </div>
         </div>
 
-        {/* Quick Actions */}
         <div className="action-bar">
           <button onClick={restartGame} className="action-btn restart">
             🔄 Restart Battle

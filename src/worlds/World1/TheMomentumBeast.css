@@ -12,7 +12,6 @@
   overflow-x: hidden;
 }
 
-/* Enhanced Cosmic Background */
 .momentum-beast-game::before {
   content: '';
   position: absolute;
@@ -39,7 +38,6 @@
   }
 }
 
-/* Game Header - Mobile First */
 .game-header {
   display: flex;
   flex-direction: column;
@@ -129,7 +127,6 @@
   color: #4fc3f7;
 }
 
-/* Battle Arena - Mobile First */
 .battle-arena {
   display: flex;
   flex-direction: column;
@@ -146,7 +143,6 @@
   width: 100%;
 }
 
-/* Simulation Zone */
 .simulation-zone {
   display: flex;
   align-items: center;
@@ -157,7 +153,7 @@
   border: 2px dashed rgba(255, 255, 255, 0.2);
   position: relative;
   overflow: hidden;
-  order: -1; /* Put simulation above characters on mobile */
+  order: -1;
 }
 
 .simulation-placeholder {
@@ -178,7 +174,6 @@
   line-height: 1.4;
 }
 
-/* Simulation Containers - Mobile Optimized */
 .simulation-container {
   width: 100%;
   height: 100%;
@@ -211,7 +206,6 @@
   text-align: center;
 }
 
-/* Health Bars - Mobile Optimized */
 .health-container {
   width: 100%;
   max-width: 200px;
@@ -270,7 +264,6 @@
   text-align: center;
 }
 
-/* Character Models - Mobile Optimized */
 .character-model {
   font-size: 3.5em;
   filter: drop-shadow(0 0 15px currentColor);
@@ -320,7 +313,6 @@
   75% { transform: translateX(6px); }
 }
 
-/* Game Interface - Mobile First */
 .game-interface {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(20px);
@@ -331,7 +323,6 @@
   z-index: 2;
 }
 
-/* Phase Tracker - Mobile Optimized */
 .phase-tracker {
   margin-bottom: 20px;
 }
@@ -393,7 +384,6 @@
   line-height: 1.2;
 }
 
-/* Problem Section - Mobile Optimized */
 .problem-section {
   display: flex;
   flex-direction: column;
@@ -498,7 +488,6 @@
   transform: none;
 }
 
-/* Feedback Messages */
 .feedback-message {
   padding: 12px 16px;
   border-radius: 10px;
@@ -533,7 +522,6 @@
   color: #ffab91;
 }
 
-/* Physics Reference */
 .physics-reference {
   background: rgba(168, 192, 255, 0.1);
   border-radius: 10px;
@@ -558,7 +546,6 @@
   text-align: center;
 }
 
-/* Action Bar - Mobile Optimized */
 .action-bar {
   display: flex;
   flex-direction: column;
@@ -597,7 +584,6 @@
   line-height: 1.4;
 }
 
-/* Simulation Styles - Mobile Optimized */
 .projectile-simulation .projectile-canvas,
 .horizontal-throw-simulation .throw-canvas,
 .impulse-simulation .impulse-canvas,
@@ -615,7 +601,6 @@
   margin: 0 auto;
 }
 
-/* Projectile Simulation Mobile */
 .projectile-simulation .projectile-canvas {
   background: linear-gradient(to bottom, #87CEEB, #1E90FF);
 }
@@ -685,7 +670,6 @@
   }
 }
 
-/* Horizontal Throw Mobile */
 .horizontal-throw-simulation .throw-canvas {
   background: linear-gradient(to bottom, #87CEEB, #1E90FF);
 }
@@ -730,7 +714,6 @@
   }
 }
 
-/* Impulse Simulation Mobile */
 .boulder-object {
   width: 50px;
   height: 50px;
@@ -767,7 +750,6 @@
   }
 }
 
-/* Victory/Defeat Screens - Mobile Optimized */
 .victory-screen,
 .defeat-screen {
   min-height: 100vh;
@@ -944,7 +926,6 @@
   align-items: center;
 }
 
-/* Tablet Styles (768px and up) */
 @media (min-width: 768px) {
   .momentum-beast-game {
     padding: 20px;
@@ -1042,7 +1023,6 @@
   }
 }
 
-/* Desktop Styles (1024px and up) */
 @media (min-width: 1024px) {
   .battle-arena {
     height: 350px;
@@ -1090,7 +1070,6 @@
   }
 }
 
-/* Large Desktop Styles (1200px and up) */
 @media (min-width: 1200px) {
   .battle-arena {
     height: 400px;
@@ -1109,7 +1088,6 @@
   }
 }
 
-/* Small Mobile Devices (480px and below) */
 @media (max-width: 480px) {
   .momentum-beast-game {
     padding: 10px;
@@ -1196,7 +1174,6 @@
   }
 }
 
-/* Very Small Devices (360px and below) */
 @media (max-width: 360px) {
   .phase-marker {
     width: 35px;

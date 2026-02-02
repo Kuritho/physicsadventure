@@ -21,7 +21,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
   const [assessmentBlocked, setAssessmentBlocked] = useState(false);
   const [questCompleted, setQuestCompleted] = useState(false);
 
-  // Assessment questions
+
   const ASSESSMENT_QUESTIONS = [
     {
       id: 1,
@@ -87,16 +87,16 @@ const RisingOrb = ({ onComplete, navigate }) => {
     }
   ];
 
-  // Physics constants
+
   const GRAVITY = 9.81;
   const PIXELS_PER_METER = 5;
   const SUCCESS_THRESHOLD = 0.5;
   const PLATFORM_TOLERANCE = 0.5;
 
-  // Platform height options (modified for perfect matches)
+  
   const platformHeights = [20, 25, 30, 35, 40, 45];
 
-  // Velocity options (modified for perfect matches)
+ 
   const velocityOptions = [
     { value: 15, label: '15 m/s', description: 'Very Low', icon: '🐌' },
     { value: 20, label: '20 m/s', description: 'Low', icon: '🚶' },
@@ -110,14 +110,14 @@ const RisingOrb = ({ onComplete, navigate }) => {
   const startTimeRef = useRef(0);
   const isMobile = window.innerWidth <= 768;
 
-  // Initialize random platform height
+  
   useEffect(() => {
     generateRandomHeight();
   }, []);
 
-  // Add CSS animations once
+  
   useEffect(() => {
-    // Check if animations are already added
+    
     if (!document.getElementById('orb-animations')) {
       const style = document.createElement('style');
       style.id = 'orb-animations';
@@ -140,7 +140,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
     }
   }, []);
 
-  // Show notification when assessment is required
+  
   useEffect(() => {
     if (assessmentBlocked && !assessmentCompleted) {
       const notification = document.createElement('div');
@@ -178,7 +178,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
     }
   }, [assessmentBlocked, assessmentCompleted]);
 
-  // Generate perfect heights for each velocity option
+ 
   const generatePerfectHeight = () => {
     const perfectHeights = velocityOptions.map(option => {
       const velocity = option.value;
@@ -186,16 +186,16 @@ const RisingOrb = ({ onComplete, navigate }) => {
       return Math.round(height);
     });
     
-    // Remove duplicates and sort
+   
     const uniqueHeights = [...new Set(perfectHeights)].sort((a, b) => a - b);
     
-    // Select a random perfect height
+ 
     const randomIndex = Math.floor(Math.random() * uniqueHeights.length);
     return uniqueHeights[randomIndex];
   };
 
   const generateRandomHeight = () => {
-    // Use perfect heights 70% of the time, random heights 30% of the time
+ 
     const usePerfectHeight = Math.random() < 0.7;
     
     if (usePerfectHeight) {
@@ -209,11 +209,11 @@ const RisingOrb = ({ onComplete, navigate }) => {
     resetLaunch();
   };
 
-  // Calculate required velocity for the platform height
+
   const calculateRequiredVelocity = (height) => {
     const exactVelocity = Math.sqrt(2 * GRAVITY * height);
     
-    // Find the closest available velocity option
+
     const availableVelocities = velocityOptions.map(v => v.value);
     const closestVelocity = availableVelocities.reduce((prev, curr) => {
       return Math.abs(curr - exactVelocity) < Math.abs(prev - exactVelocity) ? curr : prev;
@@ -226,17 +226,17 @@ const RisingOrb = ({ onComplete, navigate }) => {
     };
   };
 
-  // Calculate max height from velocity
+  
   const calculateMaxHeight = (velocity) => {
     return (velocity * velocity) / (2 * GRAVITY);
   };
 
-  // Calculate airtime from velocity
+ 
   const calculateAirtimeFromVelocity = (velocity) => {
     return (2 * velocity) / GRAVITY;
   };
 
-  // Calculate velocity at specific height
+ 
   const calculateVelocityAtHeight = (initialVelocity, height) => {
     const maxHeight = (initialVelocity * initialVelocity) / (2 * GRAVITY);
     if (height > maxHeight) {
@@ -245,7 +245,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
     return Math.sqrt(Math.abs(initialVelocity * initialVelocity - 2 * GRAVITY * height));
   };
 
-  // Calculate assessment score based on performance
+  
   const calculatePerformanceScore = () => {
     if (trials.length === 0) return 0;
     
@@ -260,7 +260,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
     return Math.round(successScore + accuracyScore);
   };
 
-  // Get performance feedback based on score
+ 
   const getPerformanceFeedback = (score) => {
     if (score >= 90) return { 
       level: "Expert", 
@@ -289,7 +289,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
     };
   };
 
-  // Handle option selection in assessment
+
   const handleSelectOption = (questionId, optionId) => {
     setSelectedOptions(prev => ({
       ...prev,
@@ -326,7 +326,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
     setAssessmentCompleted(true);
   };
 
-  // Assessment component
+
   const AssessmentPanel = () => {
     const currentQuestionData = ASSESSMENT_QUESTIONS[currentQuestion];
     const userAnswer = selectedOptions[currentQuestionData?.id];
@@ -412,7 +412,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
                   setAssessmentCompleted(true);
                   setCurrentQuestion(0);
                   setSelectedOptions({});
-                  setAssessmentBlocked(false); // Unblock progression
+                  setAssessmentBlocked(false); 
                 }}
               >
                 Return to Simulator
@@ -513,7 +513,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
     );
   };
 
-  // Blocking overlay component
+
   const AssessmentBlockingOverlay = () => {
     return (
       <div style={styles.blockingOverlay}>
@@ -565,14 +565,14 @@ const RisingOrb = ({ onComplete, navigate }) => {
     setShowResults(false);
     setLandingVelocity(0);
     
-    // Start timer
+    r
     startTimeRef.current = Date.now();
     timerRef.current = setInterval(() => {
       const currentTime = ((Date.now() - startTimeRef.current) / 1000).toFixed(1);
       setAirTime(currentTime);
     }, 100);
 
-    // Start animation
+   
     animateOrb();
   };
 
@@ -678,7 +678,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
     setTrials(prev => [...prev, newTrial]);
     setShowResults(true);
     
-    // Update performance score
+
     setAssessmentScore(calculatePerformanceScore());
     
     const successfulTrials = trials.filter(t => t.success).length + (isSuccessful ? 1 : 0);
@@ -688,7 +688,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
       }, 2000);
     }
 
-    // Show assessment after 4 trials (mandatory)
+ 
     if (trials.length >= 3 && !assessmentBlocked && !assessmentCompleted) {
       setTimeout(() => {
         setShowAssessment(true);
@@ -718,7 +718,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
   };
 
   const completeQuest = () => {
-    // Check if assessment has been completed
+  
     if (assessmentBlocked && !assessmentCompleted) {
       alert("You must complete the assessment to proceed! Your assessment will start now.");
       setShowAssessment(true);
@@ -726,11 +726,10 @@ const RisingOrb = ({ onComplete, navigate }) => {
       return;
     }
     
-    // Mark quest as completed
+    
     setQuestCompleted(true);
     setShowReward(false);
     
-    // Call the onComplete callback with assessment score
     if (onComplete) {
       onComplete({
         completed: true,
@@ -760,7 +759,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
   const successfulTrials = trials.filter(t => t.success).length;
   const currentMaxHeight = calculateMaxHeight(selectedVelocity);
 
-  // Helper for perfect velocity display
+ 
   const perfectVelocityDisplay = () => {
     if (isPerfectVelocity) {
       return `${requiredVelocity.toFixed(1)} m/s (Available: ${closestVelocity} m/s)`;
@@ -770,7 +769,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
 
   return (
     <div style={styles.container(isMobile)}>
-      {/* Header */}
+    
       <div style={styles.header}>
         <div style={styles.headerTopRow}>
           <button style={styles.backButton} onClick={() => navigate && navigate('menu')}>
@@ -803,7 +802,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
         </div>
       </div>
 
-      {/* Mission Briefing */}
+   
       <div style={styles.missionBriefing}>
         <h3>🎯 Mission Objective</h3>
         <p>Launch the orb to land perfectly on the floating platform!</p>
@@ -825,12 +824,12 @@ const RisingOrb = ({ onComplete, navigate }) => {
         )}
       </div>
 
-      {/* Mobile Layout */}
+    
       {isMobile ? (
         <div style={styles.mobileContent}>
-          {/* Simulation Area - Mobile */}
+          
           <div style={styles.simulationAreaMobile}>
-            {/* Platform */}
+            
             <div 
               style={{
                 ...styles.platform,
@@ -839,7 +838,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
                 ...(currentMaxHeight >= targetHeight - 2 && currentMaxHeight <= targetHeight + 2 ? styles.platformHighlight : {})
               }}
             >
-              {/* Orb on Platform when landed */}
+             
               {orbLandedOnPlatform && (
                 <div style={styles.orbOnPlatform}>
                   <div style={styles.platformOrbGlow}></div>
@@ -851,7 +850,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
               )}
             </div>
 
-            {/* Orb */}
+          
             {!orbLandedOnPlatform && (
               <div 
                 style={{
@@ -872,7 +871,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             )}
 
-            {/* Ground */}
+           
             <div style={styles.ground}>
               <div style={styles.launchPad}>
                 {showResults && success && (
@@ -886,7 +885,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             </div>
 
-            {/* Height Scale */}
+        
             <div style={styles.heightScale}>
               {[0, 10, 20, 30, 40, 50, 60].map(height => (
                 <div 
@@ -903,9 +902,9 @@ const RisingOrb = ({ onComplete, navigate }) => {
             </div>
           </div>
 
-          {/* Controls - Mobile */}
+         
           <div style={styles.controlsMobile}>
-            {/* Velocity Selection */}
+          
             <div style={styles.controlSection}>
               <label style={styles.controlLabel}>Launch Velocity</label>
               <div style={styles.velocityOptionsMobile}>
@@ -929,7 +928,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             </div>
 
-            {/* Quick Info */}
+          
             <div style={styles.quickInfoMobile}>
               <div style={styles.infoRow}>
                 <span>Platform Height:</span>
@@ -957,7 +956,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             </div>
 
-            {/* Timer Display */}
+         
             <div style={styles.timerSectionMobile}>
               <div style={styles.timerLabel}>Airtime</div>
               <div style={styles.timerDisplay}>{airTime}s</div>
@@ -967,7 +966,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div style={styles.actionButtonsMobile}>
               <button
                 onClick={isLaunching ? stopLaunch : startLaunch}
@@ -997,7 +995,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
             </div>
           </div>
 
-          {/* Results - Mobile */}
           {showResults && (
             <div style={{
               ...styles.resultsPanelMobile,
@@ -1048,7 +1045,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
             </div>
           )}
 
-          {/* Trials History - Mobile */}
+      
           <div style={styles.historyPanelMobile}>
             <h3 style={styles.historyTitle}>Recent Launches</h3>
             {trials.length > 0 ? (
@@ -1085,11 +1082,11 @@ const RisingOrb = ({ onComplete, navigate }) => {
           </div>
         </div>
       ) : (
-        /* Desktop Layout */
+       
         <div style={styles.content}>
-          {/* Simulation Area */}
+          
           <div style={styles.simulationArea}>
-            {/* Platform */}
+            
             <div 
               style={{
                 ...styles.platform,
@@ -1110,7 +1107,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
                 </div>
               </div>
               
-              {/* Orb on Platform when landed */}
+             
               {orbLandedOnPlatform && (
                 <div style={styles.orbOnPlatform}>
                   <div style={styles.platformOrbGlow}></div>
@@ -1122,7 +1119,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
               )}
             </div>
 
-            {/* Max Height Indicator */}
+          
             {!isLaunching && !orbLandedOnPlatform && (
               <div 
                 style={{
@@ -1138,7 +1135,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             )}
 
-            {/* Orb */}
+          
             {!orbLandedOnPlatform && (
               <div 
                 style={{
@@ -1159,7 +1156,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             )}
 
-            {/* Ground */}
+          
             <div style={styles.ground}>
               <div style={styles.launchPad}>
                 {!isLaunching && !showResults && (
@@ -1176,7 +1173,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             </div>
 
-            {/* Height Scale */}
+        
             <div style={styles.heightScale}>
               {[0, 10, 20, 30, 40, 50, 60, 70].map(height => (
                 <div 
@@ -1193,9 +1190,8 @@ const RisingOrb = ({ onComplete, navigate }) => {
             </div>
           </div>
 
-          {/* Controls Panel */}
           <div style={styles.controlsPanel}>
-            {/* Mission Info */}
+          
             <div style={styles.missionInfo}>
               <h3 style={styles.missionTitle}>🎯 Random Platform Challenge</h3>
               <p style={styles.missionText}>
@@ -1221,7 +1217,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
               )}
             </div>
 
-            {/* Velocity Selection */}
+        
             <div style={styles.controlSection}>
               <label style={styles.controlLabel}>Select Launch Velocity</label>
               <div style={styles.velocityOptions}>
@@ -1245,7 +1241,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             </div>
 
-            {/* Quick Info */}
+        
             <div style={styles.quickInfo}>
               <div style={styles.infoRow}>
                 <span>Platform Height:</span>
@@ -1278,7 +1274,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             </div>
 
-            {/* Timer Display */}
+          
             <div style={styles.timerSection}>
               <div style={styles.timerLabel}>Airtime</div>
               <div style={styles.timerDisplay}>{airTime}s</div>
@@ -1288,7 +1284,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div style={styles.actionButtons}>
               <button
                 onClick={isLaunching ? stopLaunch : startLaunch}
@@ -1317,7 +1312,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </button>
             </div>
 
-            {/* Results */}
             {showResults && (
               <div style={{
                 ...styles.resultsPanel,
@@ -1383,7 +1377,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
         </div>
       )}
 
-      {/* Desktop Trials History */}
+
       {!isMobile && (
         <div style={styles.historyPanel}>
           <h3 style={styles.historyTitle}>Launch History</h3>
@@ -1421,7 +1415,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
         </div>
       )}
 
-      {/* Reward Popup */}
       {showReward && (
         <div style={styles.rewardOverlay}>
           <div style={styles.rewardContent}>
@@ -1468,10 +1461,9 @@ const RisingOrb = ({ onComplete, navigate }) => {
         </div>
       )}
 
-      {/* Assessment Panel */}
       {showAssessment && <AssessmentPanel />}
 
-      {/* Blocking Overlay (prevents progression until assessment is completed) */}
+    
       {assessmentBlocked && !assessmentCompleted && !showAssessment && <AssessmentBlockingOverlay />}
     </div>
   );
