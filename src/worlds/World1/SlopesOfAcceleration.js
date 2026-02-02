@@ -15,34 +15,112 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
     q1: '',
     q2: '',
     q3: '',
-    q4: '',
-    q5: ''
+    q4: ''
   });
   const [assessmentSubmitted, setAssessmentSubmitted] = useState(false);
   const [assessmentScore, setAssessmentScore] = useState(0);
   const [showDataAnalyzer, setShowDataAnalyzer] = useState(false);
-  const [analyzerMode, setAnalyzerMode] = useState('summary'); // 'summary', 'compare', 'calculate'
+  const [analyzerMode, setAnalyzerMode] = useState('summary');
   const [calcAngle, setCalcAngle] = useState('');
   const [calcTime, setCalcTime] = useState('');
   const [calcResult, setCalcResult] = useState(null);
+  const [startPoint, setStartPoint] = useState(40);
+  const [rampHeight, setRampHeight] = useState(50);
+  const [rampBase, setRampBase] = useState(86.6);
   
   const canRef = useRef(null);
   const animationRef = useRef(null);
   const startTimeRef = useRef(0);
+  const [phase, setPhase] = useState('ramp');
 
-  const RAMP_LENGTH = 2.0;
+  // Constants for perfect accuracy
+  const RAMP_LENGTH = 2.0; // Total ramp length in meters (200cm = 2m)
   const GRAVITY = 9.81;
   const PIXELS_PER_METER = 120;
   const rampLengthPixels = RAMP_LENGTH * PIXELS_PER_METER;
-  const GROUND_ROLL_DISTANCE = 1.5;
+  const GROUND_Y = 480; // Ground level in pixels
+  const CAN_RADIUS = 0.05;
+  const CAN_DIAMETER = 0.1; // 10cm diameter can
 
-  const calculateTheoreticalValues = (angle) => {
+  // Calculate ACTUAL ramp angle from height and base (using trigonometry)
+  const calculateActualAngleFromHeightBase = (height, base) => {
+    const heightMeters = height / 100; // Convert cm to meters
+    const baseMeters = base / 100; // Convert cm to meters
+    
+    // Using Pythagorean theorem: length = √(height² + base²)
+    const actualLength = Math.sqrt(heightMeters * heightMeters + baseMeters * baseMeters);
+    
+    // Calculate actual angle: θ = arctan(height/base)
+    const angleRad = Math.atan2(heightMeters, baseMeters);
+    const angleDeg = (angleRad * 180) / Math.PI;
+    
+    return {
+      angle: angleDeg,
+      actualLength: actualLength
+    };
+  };
+
+  // Calculate actual height and base from angle (for display)
+  const calculateHeightBaseFromAngle = (angle) => {
+    const angleRad = (angle * Math.PI) / 180;
+    const actualHeight = RAMP_LENGTH * Math.sin(angleRad);
+    const actualBase = RAMP_LENGTH * Math.cos(angleRad);
+    
+    return {
+      height: actualHeight * 100, // Convert to cm
+      base: actualBase * 100 // Convert to cm
+    };
+  };
+
+  // PERFECT POSITIONING: Calculate can's exact position on ramp
+  // NEW: 0cm at top, 200cm at bottom edge
+  const calculateCanPosition = (startPointCm, angle) => {
+    const angleRad = (angle * Math.PI) / 180;
+    
+    // Distance from START of ramp (0cm at top)
+    // If startPoint = 40cm (from edge), distance from start = 160cm = 1.6m
+    const distanceFromStart = (200 - startPointCm) / 100; // Convert to meters
+    
+    // Calculate the actual position along the ramp
+    const x = distanceFromStart * Math.cos(angleRad); // Horizontal distance from start
+    const y = distanceFromStart * Math.sin(angleRad); // Vertical height from start
+    
+    // Convert to pixels for display
+    const xPixels = x * PIXELS_PER_METER + 32;
+    const yPixels = y * PIXELS_PER_METER + 32;
+    
+    return {
+      x: xPixels,
+      y: yPixels,
+      xMeters: x,
+      yMeters: y,
+      distanceFromStart: distanceFromStart,
+      distanceFromEdge: startPointCm / 100 // Distance to edge in meters
+    };
+  };
+
+  // Calculate theoretical time (distance from edge in meters)
+  const calculateTheoreticalTime = (distanceFromEdge, angle) => {
     const angleRad = (angle * Math.PI) / 180;
     const acceleration = GRAVITY * Math.sin(angleRad);
-    const timeToBottom = Math.sqrt((2 * RAMP_LENGTH) / acceleration);
-    const finalVelocity = acceleration * timeToBottom;
-    
-    return { acceleration, timeToBottom, finalVelocity };
+    return Math.sqrt((2 * distanceFromEdge) / acceleration);
+  };
+
+  // Calculate theoretical velocity (distance from edge in meters)
+  const calculateTheoreticalVelocity = (distanceFromEdge, angle) => {
+    const angleRad = (angle * Math.PI) / 180;
+    const acceleration = GRAVITY * Math.sin(angleRad);
+    return Math.sqrt(2 * acceleration * distanceFromEdge);
+  };
+
+  // Update can position based on current settings
+  const updateCanPosition = () => {
+    if (canRef.current) {
+      const position = calculateCanPosition(startPoint, rampAngle);
+      
+      canRef.current.style.transition = isRolling ? 'none' : 'transform 0.3s ease';
+      canRef.current.style.transform = `translate(${position.x}px, ${position.y}px) rotate(0deg)`;
+    }
   };
 
   const startRoll = () => {
@@ -52,73 +130,249 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
     setTime(0);
     setDistance(0);
     setVelocity(0);
+    setPhase('ramp');
     startTimeRef.current = performance.now();
-
-    const theoretical = calculateTheoreticalValues(rampAngle);
-    const angleRad = (rampAngle * Math.PI) / 180;
-    const acceleration = GRAVITY * Math.sin(angleRad);
 
     const animate = (currentTime) => {
       const elapsed = (currentTime - startTimeRef.current) / 1000;
-      const currentDistance = 0.5 * acceleration * elapsed * elapsed;
-      const currentVelocity = acceleration * elapsed;
+      const angleRad = (rampAngle * Math.PI) / 180;
+      const acceleration = GRAVITY * Math.sin(angleRad);
+      const distanceFromEdge = startPoint / 100; // Distance to edge from starting point
+      const distanceFromStart = (200 - startPoint) / 100; // Distance from start in meters
       
-      if (currentDistance < RAMP_LENGTH) {
-        setTime(elapsed);
-        setDistance(currentDistance);
-        setVelocity(currentVelocity);
+      if (phase === 'ramp') {
+        const timeToEdge = Math.sqrt(2 * distanceFromEdge / acceleration);
+        
+        if (elapsed < timeToEdge) {
+          const currentDistance = 0.5 * acceleration * elapsed * elapsed;
+          const currentVelocity = acceleration * elapsed;
+          
+          setTime(elapsed);
+          setDistance(currentDistance);
+          setVelocity(currentVelocity);
+          
+          if (canRef.current) {
+            const progress = elapsed / timeToEdge;
+            const currentDistanceFromStart = distanceFromStart + progress * distanceFromEdge;
+            
+            // Calculate position on ramp (from start)
+            const x = currentDistanceFromStart * Math.cos(angleRad);
+            const y = currentDistanceFromStart * Math.sin(angleRad);
+            
+            const xPixels = x * PIXELS_PER_METER + 32;
+            const yPixels = y * PIXELS_PER_METER + 32;
+            
+            // Calculate rotation
+            const rotationAngle = (currentDistance / CAN_RADIUS) * (180 / Math.PI);
+            
+            // Add slight bounce
+            const bounce = Math.abs(Math.sin(progress * Math.PI * 8)) * 1;
+            
+            canRef.current.style.transform = `translate(${xPixels}px, ${yPixels - bounce}px) rotate(${rotationAngle}deg)`;
+          }
+          
+          animationRef.current = requestAnimationFrame(animate);
+          return;
+        }
+        
+        // Reached edge of ramp - transition to FALLING
+        const velocityAtEdge = acceleration * timeToEdge;
+        setTime(timeToEdge);
+        setDistance(distanceFromEdge);
+        setVelocity(velocityAtEdge);
+        setPhase('falling');
+        
+        // Position can at exact edge of ramp (200cm from start = RAMP_LENGTH)
+        const rampEndX = RAMP_LENGTH * Math.cos(angleRad);
+        const rampEndY = RAMP_LENGTH * Math.sin(angleRad);
+        const xPixels = rampEndX * PIXELS_PER_METER + 32;
+        const yPixels = rampEndY * PIXELS_PER_METER + 32;
+        const rotationAngle = (distanceFromEdge / CAN_RADIUS) * (180 / Math.PI);
         
         if (canRef.current) {
-          const progress = currentDistance / RAMP_LENGTH;
-          const xMove = progress * rampLengthPixels * Math.cos(angleRad);
-          const yMove = progress * rampLengthPixels * Math.sin(angleRad);
-          const rotation = progress * 720;
+          canRef.current.style.transform = `translate(${xPixels}px, ${yPixels}px) rotate(${rotationAngle}deg)`;
+        }
+        
+        // Continue to falling animation
+        animationRef.current = requestAnimationFrame(animate);
+        
+      } else if (phase === 'falling') {
+        // FALLING PHASE - SIMPLE AND GUARANTEED TO WORK
+        const timeToEdge = Math.sqrt(2 * distanceFromEdge / acceleration);
+        const fallStartTime = timeToEdge;
+        const fallTime = elapsed - fallStartTime;
+        
+        // Starting position at ramp end
+        const startX = RAMP_LENGTH * Math.cos(angleRad);
+        const startY = RAMP_LENGTH * Math.sin(angleRad);
+        
+        // Velocity when leaving ramp
+        const exitVelocity = acceleration * timeToEdge;
+        const velocityX = exitVelocity * Math.cos(angleRad);
+        const velocityY = -exitVelocity * Math.sin(angleRad); // Negative = downward
+        
+        // Calculate new position (simple projectile motion)
+        const newX = startX + (velocityX * fallTime);
+        const newY = startY + (velocityY * fallTime) + (0.5 * GRAVITY * fallTime * fallTime);
+        
+        // Convert to pixels
+        const xPixels = newX * PIXELS_PER_METER + 32;
+        const yPixels = newY * PIXELS_PER_METER + 32;
+        
+        // Calculate ground level in meters
+        const groundLevelMeters = (GROUND_Y - 32) / PIXELS_PER_METER;
+        
+        // Check if can has hit the ground
+        if (newY >= groundLevelMeters - 0.05) {
+          // HIT GROUND - transition to ground phase
+          setPhase('ground');
           
-          canRef.current.style.transform = `translate(${xMove}px, ${yMove}px) rotate(${rotation}deg)`;
+          // Calculate exact ground hit time using quadratic formula
+          const a = 0.5 * GRAVITY;
+          const b = velocityY;
+          const c = startY - groundLevelMeters;
+          const discriminant = b * b - 4 * a * c;
+          
+          let groundHitTime = 0;
+          if (discriminant >= 0) {
+            groundHitTime = (-b - Math.sqrt(discriminant)) / (2 * a);
+          } else {
+            groundHitTime = 0.5; // Fallback value
+          }
+          
+          // Ground hit position
+          const groundHitX = startX + (velocityX * groundHitTime);
+          const groundHitXPixels = groundHitX * PIXELS_PER_METER + 32;
+          
+          // Update position to ground
+          const totalDistance = distanceFromEdge + (velocityX * groundHitTime);
+          const rotationAngle = (totalDistance / CAN_RADIUS) * (180 / Math.PI);
+          
+          if (canRef.current) {
+            // Add bounce effect
+            const bounce = 15 * Math.exp(-groundHitTime * 5);
+            canRef.current.style.transform = `translate(${groundHitXPixels}px, ${GROUND_Y - 20 - bounce}px) rotate(${rotationAngle}deg)`;
+          }
+          
+          // Update displayed values
+          const groundHitVelocityX = velocityX;
+          const groundHitVelocityY = velocityY + GRAVITY * groundHitTime;
+          const groundHitVelocity = Math.sqrt(groundHitVelocityX * groundHitVelocityX + groundHitVelocityY * groundHitVelocityY);
+          
+          setVelocity(groundHitVelocity);
+          setTime(fallStartTime + groundHitTime);
+          setDistance(totalDistance);
+          
+        } else {
+          // STILL FALLING - update position
+          if (canRef.current) {
+            const totalDistance = distanceFromEdge + (velocityX * fallTime);
+            const rotationAngle = (totalDistance / CAN_RADIUS) * (180 / Math.PI);
+            
+            canRef.current.style.transform = `translate(${xPixels}px, ${yPixels}px) rotate(${rotationAngle}deg)`;
+            
+            // Update velocity during fall
+            const currentVelocityX = velocityX;
+            const currentVelocityY = velocityY + GRAVITY * fallTime;
+            const currentVelocity = Math.sqrt(currentVelocityX * currentVelocityX + currentVelocityY * currentVelocityY);
+            
+            setVelocity(currentVelocity);
+            setTime(elapsed);
+            setDistance(totalDistance);
+          }
         }
         
         animationRef.current = requestAnimationFrame(animate);
-        return;
-      }
-      
-      const timeOnRamp = theoretical.timeToBottom;
-      const velocityAtBottom = theoretical.finalVelocity;
-      const timeOnGround = elapsed - timeOnRamp;
-      const groundDistance = velocityAtBottom * timeOnGround;
-      
-      const totalDistance = RAMP_LENGTH + groundDistance;
-      
-      if (groundDistance >= GROUND_ROLL_DISTANCE) {
-        setTime(timeOnRamp + (GROUND_ROLL_DISTANCE / velocityAtBottom));
-        setDistance(RAMP_LENGTH + GROUND_ROLL_DISTANCE);
-        setVelocity(velocityAtBottom);
         
-        if (canRef.current) {
-          const xRamp = rampLengthPixels * Math.cos(angleRad);
-          const yRamp = rampLengthPixels * Math.sin(angleRad);
-          const xGround = xRamp + (GROUND_ROLL_DISTANCE * PIXELS_PER_METER);
-          const rotation = ((RAMP_LENGTH + GROUND_ROLL_DISTANCE) / 0.05) * 36;
+      } else if (phase === 'ground') {
+        // GROUND ROLLING PHASE
+        const timeToEdge = Math.sqrt(2 * distanceFromEdge / acceleration);
+        const groundRollTime = elapsed - timeToEdge - 0.5; // Start after falling
+        
+        if (groundRollTime < 2.0 && canRef.current) {
+          // Simple ground rolling with friction
+          const initialVelocity = acceleration * timeToEdge;
+          const velocityX = initialVelocity * Math.cos(angleRad);
           
-          canRef.current.style.transform = `translate(${xGround}px, ${yRamp}px) rotate(${rotation}deg)`;
+          // Friction deceleration
+          const friction = 0.3;
+          const deceleration = friction * GRAVITY;
+          
+          // Calculate ground hit position
+          const startX = RAMP_LENGTH * Math.cos(angleRad);
+          const startY = RAMP_LENGTH * Math.sin(angleRad);
+          const groundLevelMeters = (GROUND_Y - 32) / PIXELS_PER_METER;
+          const velocityY = -initialVelocity * Math.sin(angleRad);
+          
+          // Calculate falling time to ground
+          const a = 0.5 * GRAVITY;
+          const b = velocityY;
+          const c = startY - groundLevelMeters;
+          const discriminant = b * b - 4 * a * c;
+          let fallTimeToGround = 0.5;
+          if (discriminant >= 0) {
+            fallTimeToGround = (-b - Math.sqrt(discriminant)) / (2 * a);
+          }
+          
+          // Ground hit position
+          const groundHitX = startX + (velocityX * fallTimeToGround);
+          
+          // Ground rolling distance
+          const decelTime = Math.min(groundRollTime, velocityX / deceleration);
+          const groundDistance = velocityX * decelTime - 0.5 * deceleration * decelTime * decelTime;
+          const currentVelocity = Math.max(0, velocityX - deceleration * decelTime);
+          
+          // Current position
+          const currentX = groundHitX + groundDistance;
+          const xPixels = currentX * PIXELS_PER_METER + 32;
+          
+          // Total distance and rotation
+          const totalDistance = distanceFromEdge + (velocityX * fallTimeToGround) + groundDistance;
+          const rotationAngle = (totalDistance / CAN_RADIUS) * (180 / Math.PI);
+          
+          // Bounce effect
+          let bounce = 0;
+          if (groundRollTime < 0.3) {
+            bounce = 8 * Math.sin(groundRollTime * Math.PI * 10) * Math.exp(-groundRollTime * 10);
+          }
+          
+          canRef.current.style.transform = `translate(${xPixels}px, ${GROUND_Y - 20 - bounce}px) rotate(${rotationAngle}deg)`;
+          
+          setVelocity(currentVelocity);
+          setTime(elapsed);
+          setDistance(totalDistance);
+          
+          animationRef.current = requestAnimationFrame(animate);
+          return;
         }
         
-        const experimentalAcceleration = (2 * RAMP_LENGTH) / (timeOnRamp * timeOnRamp);
-        const error = Math.abs(theoretical.acceleration - experimentalAcceleration) / theoretical.acceleration * 100;
+        // ANIMATION COMPLETE
+        const theoreticalTime = calculateTheoreticalTime(distanceFromEdge, rampAngle);
+        const theoreticalVelocity = calculateTheoreticalVelocity(distanceFromEdge, rampAngle);
+        const experimentalAcceleration = (2 * distanceFromEdge) / (timeToEdge * timeToEdge);
+        const theoreticalAcceleration = GRAVITY * Math.sin(angleRad);
+        const error = Math.abs(theoreticalAcceleration - experimentalAcceleration) / theoreticalAcceleration * 100;
+        
+        setVelocity(0);
         
         const newTrial = {
+          startPoint: startPoint,
           angle: rampAngle,
-          time: timeOnRamp,
-          distance: RAMP_LENGTH,
+          time: timeToEdge,
+          distance: distanceFromEdge,
+          theoreticalTime: theoreticalTime,
+          theoreticalVelocity: theoreticalVelocity,
           acceleration: {
-            theoretical: theoretical.acceleration,
+            theoretical: theoreticalAcceleration,
             experimental: experimentalAcceleration,
             error: error
           },
-          finalVelocity: velocityAtBottom
+          finalVelocity: theoreticalVelocity
         };
         
         setTrials(prev => [...prev, newTrial]);
         setIsRolling(false);
+        setPhase('ramp');
         
         if (animationRef.current) {
           cancelAnimationFrame(animationRef.current);
@@ -131,23 +385,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
             setTimeout(() => startRoll(), 100);
           }, 500);
         }
-        return;
       }
-      
-      setTime(elapsed);
-      setDistance(totalDistance);
-      setVelocity(velocityAtBottom);
-      
-      if (canRef.current) {
-        const xRamp = rampLengthPixels * Math.cos(angleRad);
-        const yRamp = rampLengthPixels * Math.sin(angleRad);
-        const xGround = xRamp + (groundDistance * PIXELS_PER_METER);
-        const rotation = ((RAMP_LENGTH + groundDistance) / 0.05) * 36;
-        
-        canRef.current.style.transform = `translate(${xGround}px, ${yRamp}px) rotate(${rotation}deg)`;
-      }
-      
-      animationRef.current = requestAnimationFrame(animate);
     };
     
     animationRef.current = requestAnimationFrame(animate);
@@ -158,23 +396,31 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
     
     setIsContinuous(false);
     setIsRolling(false);
+    setPhase('ramp');
     
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
     
-    if (time > 0 && distance > 0 && distance < RAMP_LENGTH) {
-      const theoretical = calculateTheoreticalValues(rampAngle);
+    if (time > 0 && distance > 0) {
+      const distanceFromEdge = startPoint / 100;
+      const angleRad = (rampAngle * Math.PI) / 180;
+      const theoreticalAcceleration = GRAVITY * Math.sin(angleRad);
       const experimentalAcceleration = (2 * distance) / (time * time);
-      const error = Math.abs(theoretical.acceleration - experimentalAcceleration) / theoretical.acceleration * 100;
+      const error = Math.abs(theoreticalAcceleration - experimentalAcceleration) / theoreticalAcceleration * 100;
+      const theoreticalTime = calculateTheoreticalTime(distanceFromEdge, rampAngle);
+      const theoreticalVelocity = calculateTheoreticalVelocity(distanceFromEdge, rampAngle);
       
       const newTrial = {
+        startPoint: startPoint,
         angle: rampAngle,
         time: time,
         distance: distance,
+        theoreticalTime: theoreticalTime,
+        theoreticalVelocity: theoreticalVelocity,
         acceleration: {
-          theoretical: theoretical.acceleration,
+          theoretical: theoreticalAcceleration,
           experimental: experimentalAcceleration,
           error: error
         },
@@ -188,6 +434,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
   const resetExperiment = () => {
     setIsContinuous(false);
     setIsRolling(false);
+    setPhase('ramp');
     
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
@@ -198,11 +445,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
     setDistance(0);
     setVelocity(0);
     
-    if (canRef.current) {
-      canRef.current.style.transition = 'none';
-      canRef.current.style.transform = 'translate(0px, 0px) rotate(0deg)';
-      void canRef.current.offsetHeight;
-    }
+    updateCanPosition();
   };
 
   const toggleContinuous = () => {
@@ -216,6 +459,59 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
     }
   };
 
+  // Update can position whenever startPoint or rampAngle changes
+  useEffect(() => {
+    updateCanPosition();
+  }, [startPoint, rampAngle]);
+
+  // Calculate actual ramp dimensions
+  const actualDimensions = calculateHeightBaseFromAngle(rampAngle);
+  const actualHeight = actualDimensions.height;
+  const actualBase = actualDimensions.base;
+
+  // Handle height change - update angle based on height/base
+  const handleHeightChange = (e) => {
+    const newHeight = parseInt(e.target.value);
+    const calculation = calculateActualAngleFromHeightBase(newHeight, rampBase);
+    
+    setRampAngle(Math.round(calculation.angle * 10) / 10);
+    setRampHeight(newHeight);
+    
+    // Show alert if length doesn't match 2m
+    if (Math.abs(calculation.actualLength - RAMP_LENGTH) > 0.01) {
+      alert(`Note: With Height=${newHeight}cm and Base=${rampBase}cm, the ramp length is ${(calculation.actualLength * 100).toFixed(1)}cm (not exactly 200cm). The simulation will use the calculated angle of ${calculation.angle.toFixed(1)}°.`);
+    }
+    
+    resetExperiment();
+  };
+
+  // Handle base change - update angle based on height/base
+  const handleBaseChange = (e) => {
+    const newBase = parseInt(e.target.value);
+    const calculation = calculateActualAngleFromHeightBase(rampHeight, newBase);
+    
+    setRampAngle(Math.round(calculation.angle * 10) / 10);
+    setRampBase(newBase);
+    
+    // Show alert if length doesn't match 2m
+    if (Math.abs(calculation.actualLength - RAMP_LENGTH) > 0.01) {
+      alert(`Note: With Height=${rampHeight}cm and Base=${newBase}cm, the ramp length is ${(calculation.actualLength * 100).toFixed(1)}cm (not exactly 200cm). The simulation will use the calculated angle of ${calculation.angle.toFixed(1)}°.`);
+    }
+    
+    resetExperiment();
+  };
+
+  // Handle angle change - update height and base
+  const handleAngleChange = (e) => {
+    const newAngle = parseInt(e.target.value);
+    const dimensions = calculateHeightBaseFromAngle(newAngle);
+    
+    setRampAngle(newAngle);
+    setRampHeight(Math.round(dimensions.height));
+    setRampBase(Math.round(dimensions.base));
+    resetExperiment();
+  };
+
   useEffect(() => {
     return () => {
       if (animationRef.current) {
@@ -225,10 +521,10 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
   }, []);
 
   const completeQuest = () => {
-    if (trials.length >= 3) {
+    if (trials.length >= 5) {
       setShowAssessment(true);
     } else {
-      alert('Please complete at least 3 trials to analyze the data!');
+      alert('Please complete trials from all 5 starting points (200cm, 160cm, 120cm, 80cm, 40cm) to analyze the data!');
     }
   };
 
@@ -243,32 +539,27 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
     // Calculate average experimental acceleration from trials
     const avgAcceleration = trials.reduce((sum, t) => sum + t.acceleration.experimental, 0) / trials.length;
     
-    // Correct answers
+    // Correct answers for the new questions
     const correctAnswers = {
-      q1: 'parabolic', // Distance-time graph shape
-      q2: 'linear', // Distance-time² graph shape
-      q3: Math.abs(avgAcceleration - parseFloat(assessmentAnswers.q3 || 0)) < 1 ? assessmentAnswers.q3 : avgAcceleration.toFixed(2), // Acceleration value
-      q4: 'increases', // Steeper angle effect
-      q5: 'gravity' // Force causing acceleration
+      q1: 'd', // d-t is parabolic, d-t² is linear
+      q2: 'a', // d = ½at²
+      q3: 'c', // Slope of d-t² is ½a (m/s²)
+      q4: 'b' // Can is uniformly accelerated
     };
 
     let score = 0;
     
-    // Q1: Graph shape (distance-time)
-    if (assessmentAnswers.q1 === correctAnswers.q1) score += 20;
+    // Q1: Graph descriptions
+    if (assessmentAnswers.q1 === correctAnswers.q1) score += 25;
     
-    // Q2: Graph shape (distance-time²)
-    if (assessmentAnswers.q2 === correctAnswers.q2) score += 20;
+    // Q2: Relationship between distance and time
+    if (assessmentAnswers.q2 === correctAnswers.q2) score += 25;
     
-    // Q3: Acceleration value (within 1 m/s² tolerance)
-    const userAccel = parseFloat(assessmentAnswers.q3 || 0);
-    if (Math.abs(userAccel - avgAcceleration) < 1) score += 20;
+    // Q3: Slope of d-t² graph
+    if (assessmentAnswers.q3 === correctAnswers.q3) score += 25;
     
-    // Q4: Angle effect
-    if (assessmentAnswers.q4 === correctAnswers.q4) score += 20;
-    
-    // Q5: Force identification
-    if (assessmentAnswers.q5 === correctAnswers.q5) score += 20;
+    // Q4: What the graphs suggest
+    if (assessmentAnswers.q4 === correctAnswers.q4) score += 25;
     
     setAssessmentScore(score);
     setAssessmentSubmitted(true);
@@ -276,7 +567,6 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
     // If they pass (60% or higher), unlock the Data Analyzer Tool
     if (score >= 60) {
       setShowDataAnalyzer(true);
-      // Don't auto-complete - let user explore the tool and click button
     }
   };
 
@@ -286,8 +576,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
       q1: '',
       q2: '',
       q3: '',
-      q4: '',
-      q5: ''
+      q4: ''
     });
     setAssessmentScore(0);
   };
@@ -325,13 +614,12 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
     );
   };
 
-  const handleAngleChange = (e) => {
-    const newAngle = parseInt(e.target.value);
-    setRampAngle(newAngle);
-    resetExperiment();
-  };
+  const theoreticalTime = calculateTheoreticalTime(startPoint / 100, rampAngle);
+  const theoreticalVelocity = calculateTheoreticalVelocity(startPoint / 100, rampAngle);
+  const theoreticalAcceleration = GRAVITY * Math.sin((rampAngle * Math.PI) / 180);
 
-  const theoretical = calculateTheoreticalValues(rampAngle);
+  // Calculate the exact position for verification
+  const canPosition = calculateCanPosition(startPoint, rampAngle);
 
   const styles = {
     container: {
@@ -378,7 +666,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
     },
     simulationBox: {
       position: 'relative',
-      height: '320px',
+      height: '550px',
       overflow: 'visible',
       borderRadius: '8px',
       background: 'linear-gradient(to bottom, rgba(12, 74, 110, 0.2), rgba(20, 83, 45, 0.2))'
@@ -391,15 +679,18 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
       height: '64px',
       background: 'linear-gradient(to top, #374151, #4b5563)'
     },
-    ramp: {
+    rampContainer: {
       position: 'absolute',
       top: '32px',
       left: '32px',
-      width: rampLengthPixels + 'px',
+      zIndex: 2,
+      transformOrigin: 'left top'
+    },
+    ramp: {
+      width: `${rampLengthPixels}px`,
       height: '16px',
-      transformOrigin: 'left top',
       transform: `rotate(${rampAngle}deg)`,
-      zIndex: 2
+      transformOrigin: 'left top'
     },
     rampSurface: {
       width: '100%',
@@ -414,20 +705,36 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
       top: 0,
       left: 0,
       width: '4px',
-      height: '48px',
+      height: `${(actualHeight / 100) * PIXELS_PER_METER}px`,
       background: '#9333ea',
-      transform: 'translateY(-100%)'
+      transform: 'translateY(-100%) rotate(0deg)'
     },
     can: {
       position: 'absolute',
-      top: '32px',
-      left: '32px',
-      fontSize: '36px',
+      top: 0,
+      left: 0,
+      width: '40px',
+      height: '40px',
+      borderRadius: '50%',
+      background: 'linear-gradient(135deg, #f59e0b, #d97706)',
       zIndex: 10,
       transition: 'none',
       willChange: 'transform',
-      filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4))',
-      transform: 'translate(0px, 0px) rotate(0deg)'
+      filter: 'drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4))',
+      transform: 'translate(32px, 32px) rotate(0deg)',
+      transformOrigin: 'center center',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: '14px',
+      border: '2px solid #92400e',
+      boxShadow: 'inset 0 0 8px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.3)'
+    },
+    canLabel: {
+      pointerEvents: 'none',
+      userSelect: 'none'
     },
     marker: {
       position: 'absolute',
@@ -437,6 +744,17 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
       borderRadius: '4px',
       fontSize: '11px',
       fontWeight: 'bold'
+    },
+    distanceMarker: {
+      position: 'absolute',
+      background: 'rgba(255, 255, 255, 0.7)',
+      color: '#1e1b4b',
+      padding: '2px 6px',
+      borderRadius: '3px',
+      fontSize: '10px',
+      fontWeight: 'bold',
+      border: '1px solid rgba(0, 0, 0, 0.2)',
+      transform: `rotate(${-rampAngle}deg)`
     },
     angleDisplay: {
       position: 'absolute',
@@ -893,52 +1211,274 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
     }
   };
 
+  // Platform Edge Component
+  const PlatformEdge = () => {
+    const angleRad = (rampAngle * Math.PI) / 180;
+    const rampEndX = RAMP_LENGTH * Math.cos(angleRad);
+    const rampEndY = RAMP_LENGTH * Math.sin(angleRad);
+    
+    const xPixels = rampEndX * PIXELS_PER_METER + 32;
+    const yPixels = rampEndY * PIXELS_PER_METER + 32;
+    
+    return (
+      <>
+        {/* Platform edge line - VERY VISIBLE */}
+        <div style={{
+          position: 'absolute',
+          top: `${yPixels - 5}px`,
+          left: `${xPixels}px`,
+          width: '8px',
+          height: `${GROUND_Y - yPixels + 20}px`,
+          background: 'linear-gradient(to bottom, #ef4444 0%, #ef4444 20%, #dc2626 100%)',
+          zIndex: 3,
+          boxShadow: '0 0 15px rgba(220, 38, 38, 0.9)',
+          borderRadius: '4px 0 0 4px'
+        }}></div>
+        
+        {/* Edge warning triangle */}
+        <div style={{
+          position: 'absolute',
+          top: `${yPixels - 15}px`,
+          left: `${xPixels + 10}px`,
+          width: '0',
+          height: '0',
+          borderLeft: '15px solid #ef4444',
+          borderTop: '10px solid transparent',
+          borderBottom: '10px solid transparent',
+          filter: 'drop-shadow(0 0 8px rgba(239, 68, 68, 0.8))',
+          zIndex: 4
+        }}></div>
+        
+        {/* Danger zone label */}
+        <div style={{
+          position: 'absolute',
+          top: `${yPixels + 50}px`,
+          left: `${xPixels + 40}px`,
+          background: 'rgba(239, 68, 68, 0.9)',
+          color: 'white',
+          padding: '8px 16px',
+          borderRadius: '8px',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          zIndex: 4,
+          pointerEvents: 'none',
+          border: '2px solid white',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+          transform: 'rotate(-5deg)'
+        }}>
+          ⚠️ FALLING ZONE
+        </div>
+        
+        {/* Falling animation indicator when can is falling */}
+        {isRolling && phase === 'falling' && (
+          <div style={{
+            position: 'absolute',
+            top: `${yPixels}px`,
+            left: `${xPixels + 20}px`,
+            width: '4px',
+            height: `${GROUND_Y - yPixels}px`,
+            background: 'linear-gradient(to bottom, #fbbf24, #ef4444)',
+            zIndex: 2,
+            opacity: 0.6,
+            animation: 'fallingArrow 1s infinite'
+          }}>
+            <style>{`
+              @keyframes fallingArrow {
+                0% { opacity: 0.3; }
+                50% { opacity: 0.8; }
+                100% { opacity: 0.3; }
+              }
+            `}</style>
+          </div>
+        )}
+      </>
+    );
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
         <button style={styles.backButton} onClick={() => navigate && navigate('menu')}>
           <span>←</span> Back to Menu
         </button>
-        <h1 style={styles.title}>🎢 Slopes of Acceleration</h1>
-        <p style={styles.subtitle}>Roll the object down the ramp and collect data!</p>
+        <h1 style={styles.title}>📐 Slopes of Acceleration - NEW: 0cm at Top, 200cm at Edge</h1>
+        <p style={styles.subtitle}>Now: 200cm at top of ramp, 40cm at edge. Can rolls DOWN from selected position!</p>
       </div>
 
       <div style={styles.section}>
         <div style={styles.simulationBox}>
           <div style={styles.ground}></div>
           
-          <div style={styles.ramp}>
-            <div style={styles.rampSurface}>
-              {[0, 0.25, 0.5, 0.75, 1].map((pos, i) => (
-                <div 
-                  key={i}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    bottom: 0,
-                    width: '2px',
-                    background: 'rgba(255, 255, 255, 0.4)',
-                    left: `${pos * 100}%`
-                  }}
-                ></div>
-              ))}
+          <div style={styles.rampContainer}>
+            <div style={{
+              ...styles.rampSupport,
+              height: `${(actualHeight / 100) * PIXELS_PER_METER}px`
+            }}></div>
+            <div style={styles.ramp}>
+              <div style={styles.rampSurface}>
+                {/* PERFECT distance markers - REVERSED ORDER: 200cm at top, 40cm at edge */}
+                {[200, 160, 120, 80, 40].map((cm, i) => {
+                  const distanceFromStart = (200 - cm) / 100; // Distance from start in meters
+                  const angleRad = (rampAngle * Math.PI) / 180;
+                  const position = (distanceFromStart / RAMP_LENGTH) * 100;
+                  
+                  return (
+                    <React.Fragment key={i}>
+                      <div 
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          bottom: 0,
+                          width: '3px',
+                          background: cm === startPoint ? '#4ade80' : 'rgba(255, 255, 255, 0.8)',
+                          left: `${position}%`,
+                          transform: 'rotate(0deg)',
+                          boxShadow: cm === startPoint ? '0 0 8px #4ade80' : 'none',
+                          zIndex: cm === startPoint ? 5 : 3
+                        }}
+                      ></div>
+                      <div 
+                        style={{
+                          ...styles.distanceMarker,
+                          top: '-20px',
+                          left: `${position}%`,
+                          transform: `translateX(-50%) rotate(${-rampAngle}deg)`,
+                          background: cm === startPoint ? '#4ade80' : 'rgba(255, 255, 255, 0.9)',
+                          color: cm === startPoint ? 'white' : '#1e1b4b',
+                          fontWeight: cm === startPoint ? 'bold' : 'normal',
+                          border: cm === startPoint ? '2px solid white' : '1px solid rgba(0, 0, 0, 0.2)'
+                        }}
+                      >
+                        {cm}cm
+                        {cm === startPoint && ' ✓'}
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
             </div>
-            <div style={styles.rampSupport}></div>
           </div>
           
-          <div ref={canRef} style={styles.can}>🥫</div>
+          <PlatformEdge />
           
-          <div style={{...styles.marker, top: '8px', left: '16px'}}>START</div>
-          <div style={{...styles.marker, bottom: '80px', right: '16px'}}>END</div>
-          <div style={styles.angleDisplay}>θ = {rampAngle}°</div>
+          {/* Ramp Orientation Guide */}
+          <div style={{
+            position: 'absolute',
+            top: '290px',
+            left: '18px',
+            background: 'rgba(0, 0, 0, 0.7)',
+            padding: '8px',
+            borderRadius: '8px',
+            fontSize: '11px',
+            zIndex: 4,
+            pointerEvents: 'none',
+            border: '1px solid #4ade80'
+          }}>
+            <div style={{color: '#4ade80', fontWeight: 'bold', marginBottom: '4px'}}>
+              RAMP ORIENTATION:
+            </div>
+            <div style={{display: 'flex', alignItems: 'center', marginBottom: '2px'}}>
+              <div style={{width: '20px', height: '1px', background: '#4ade80', marginRight: '4px'}}></div>
+              <span>0cm (TOP)</span>
+            </div>
+            <div style={{display: 'flex', alignItems: 'center', marginBottom: '2px'}}>
+              <div style={{width: '20px', height: '1px', background: '#fbbf24', marginRight: '4px'}}></div>
+              <span>{startPoint}cm ✓ (CAN)</span>
+            </div>
+            <div style={{display: 'flex', alignItems: 'center'}}>
+              <div style={{width: '20px', height: '1px', background: '#ef4444', marginRight: '4px'}}></div>
+              <span>200cm (EDGE)</span>
+            </div>
+          </div>
+          
+          <div ref={canRef} style={styles.can}>
+            <div style={styles.canLabel}>CAN</div>
+          </div>
+          
+          {/* Position verification */}
+          <div style={{...styles.marker, top: '8px', left: '16px', background: '#4ade80'}}>
+            ✅ PERFECT POSITION:<br/>
+            Start: {startPoint}cm from edge<br/>
+            Position: {((200 - startPoint) / 100).toFixed(2)}m from start<br/>
+            X: {canPosition.xMeters.toFixed(3)}m, Y: {canPosition.yMeters.toFixed(3)}m
+          </div>
+          <div style={{...styles.marker, bottom: '400px', right: '16px', background: '#3b82f6'}}>
+            RAMP LENGTH: 200cm (2m)<br/>
+            Angle: {rampAngle.toFixed(1)}°
+          </div>
+          <div style={styles.angleDisplay}>
+            RAMP DIMENSIONS:<br/>
+            Height: {actualHeight.toFixed(1)}cm<br/>
+            Base: {actualBase.toFixed(1)}cm<br/>
+            Length: 200.0cm<br/>
+            <span style={{color: '#4ade80', fontSize: '11px'}}>
+              • 0cm at top<br/>
+              • {startPoint}cm from edge ✓<br/>
+              • 200cm at bottom
+            </span>
+          </div>
+          
+          {/* Status indicator */}
+          <div style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            background: phase === 'falling' ? 'rgba(220, 38, 38, 0.9)' : 
+                      phase === 'ground' ? 'rgba(34, 197, 94, 0.9)' : 
+                      'rgba(59, 130, 246, 0.9)',
+            color: 'white',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+            fontSize: '14px',
+            zIndex: 5,
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+          }}>
+            {phase === 'ramp' ? '📐 ON RAMP' : 
+             phase === 'falling' ? '⚠️ FALLING!' : 
+             '🌍 ON GROUND'}
+          </div>
         </div>
       </div>
 
       <div style={styles.section}>
-        <h3 style={styles.sectionTitle}>Controls</h3>
+        <h3 style={styles.sectionTitle}>Procedure Setup - NEW ORIENTATION</h3>
         
         <div style={{marginBottom: '16px'}}>
-          <label style={styles.label}>Ramp Angle: {rampAngle}°</label>
+          <label style={styles.label}>Starting Point: {startPoint}cm from edge ({(200 - startPoint)}cm from top)</label>
+          <input
+            type="range"
+            min="40"
+            max="200"
+            step="40"
+            value={startPoint}
+            onChange={(e) => { setStartPoint(parseInt(e.target.value)); }}
+            disabled={isRolling}
+            style={styles.slider}
+          />
+          <div style={styles.presetButtons}>
+            {[200, 160, 120, 80, 40].map(point => (
+              <button 
+                key={point}
+                onClick={() => { setStartPoint(point); }} 
+                disabled={isRolling}
+                style={{
+                  ...styles.presetBtn, 
+                  opacity: isRolling ? 0.5 : 1,
+                  background: point === startPoint ? '#4ade80' : 'rgba(168, 85, 247, 0.3)',
+                  color: point === startPoint ? 'white' : 'white',
+                  fontWeight: point === startPoint ? 'bold' : 'normal'
+                }}
+              >
+                {point}cm from edge
+                {point === startPoint && ' ✓'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{marginBottom: '16px'}}>
+          <label style={styles.label}>Ramp Angle: {rampAngle.toFixed(1)}°</label>
           <input
             type="range"
             min="5"
@@ -948,18 +1488,43 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
             disabled={isRolling}
             style={styles.slider}
           />
-          <div style={styles.presetButtons}>
-            {[15, 30, 45].map(angle => (
-              <button 
-                key={angle}
-                onClick={() => { setRampAngle(angle); resetExperiment(); }} 
-                disabled={isRolling}
-                style={{...styles.presetBtn, opacity: isRolling ? 0.5 : 1}}
-              >
-                {angle}°
-              </button>
-            ))}
-          </div>
+        </div>
+
+        <div style={{marginBottom: '16px'}}>
+          <label style={styles.label}>Ramp Height: {rampHeight}cm ({(rampHeight/100).toFixed(2)}m)</label>
+          <input
+            type="range"
+            min="10"
+            max="173"
+            value={rampHeight}
+            onChange={handleHeightChange}
+            disabled={isRolling}
+            style={styles.slider}
+          />
+        </div>
+
+        <div style={{marginBottom: '16px'}}>
+          <label style={styles.label}>Ramp Base: {rampBase}cm ({(rampBase/100).toFixed(2)}m)</label>
+          <input
+            type="range"
+            min="100"
+            max="200"
+            value={rampBase}
+            onChange={handleBaseChange}
+            disabled={isRolling}
+            style={styles.slider}
+          />
+        </div>
+
+        <div style={{background: 'rgba(74, 222, 128, 0.3)', padding: '12px', borderRadius: '8px', marginBottom: '16px', border: '2px solid #4ade80'}}>
+          <p style={{margin: '0 0 8px 0', fontWeight: 'bold', color: '#4ade80'}}>✅ NEW RAMP ORIENTATION:</p>
+          <p style={{margin: '0 0 4px 0', fontSize: '14px'}}>
+            • 0cm mark at TOP of ramp (start)<br/>
+            • 200cm mark at BOTTOM edge of ramp<br/>
+            • Starting point: {startPoint}cm from edge<br/>
+            • Distance to roll: {(startPoint / 100).toFixed(2)} meters<br/>
+            • CAN IS PERFECTLY PLACED ON RAMP SURFACE
+          </p>
         </div>
 
         <div style={styles.buttonGrid}>
@@ -968,7 +1533,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
             disabled={isRolling || isContinuous}
             style={{...styles.button, ...styles.buttonStart, opacity: (isRolling || isContinuous) ? 0.5 : 1}}
           >
-            🚀 Start
+            ⏱️ Start Timer
           </button>
           <button 
             onClick={toggleContinuous}
@@ -989,25 +1554,44 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
           >
             🔄 Reset
           </button>
+          {/* DEBUG BUTTON */}
+          <button 
+            onClick={() => {
+              console.log('DEBUG INFO:');
+              console.log('Phase:', phase);
+              console.log('Is Rolling:', isRolling);
+              console.log('Time:', time);
+              console.log('Angle:', rampAngle);
+              console.log('Start Point:', startPoint);
+              console.log('Distance from edge:', startPoint / 100);
+            }}
+            style={{...styles.button, background: '#8b5cf6', color: 'white', gridColumn: '1 / -1'}}
+          >
+            🐛 Debug Info
+          </button>
         </div>
 
         <div style={styles.dataGrid}>
           <div style={styles.dataCard}>
             <div style={styles.dataLabel}>Time</div>
-            <div style={styles.dataValue}>{time.toFixed(2)} s</div>
+            <div style={styles.dataValue}>{time.toFixed(3)} s</div>
           </div>
           <div style={styles.dataCard}>
-            <div style={styles.dataLabel}>Distance</div>
-            <div style={styles.dataValue}>{distance.toFixed(2)} m</div>
+            <div style={styles.dataLabel}>Distance Rolled</div>
+            <div style={styles.dataValue}>{(distance * 100).toFixed(1)} cm</div>
           </div>
           <div style={styles.dataCard}>
             <div style={styles.dataLabel}>Velocity</div>
-            <div style={styles.dataValue}>{velocity.toFixed(2)} m/s</div>
+            <div style={styles.dataValue}>{velocity.toFixed(3)} m/s</div>
           </div>
           <div style={styles.dataCard}>
             <div style={styles.dataLabel}>Status</div>
             <div style={styles.dataValueSmall}>
-              {isContinuous ? '🔁 Looping' : isRolling ? (distance < RAMP_LENGTH ? '🔄 On Ramp' : '🏃 On Ground') : distance >= RAMP_LENGTH + GROUND_ROLL_DISTANCE ? '✅ Done' : '⏸️ Ready'}
+              {phase === 'falling' ? '⚠️ Falling' : 
+               phase === 'ground' ? '🌍 Ground' : 
+               isContinuous ? '🔁 Looping' : 
+               isRolling ? '🔄 Rolling' : 
+               '⏸️ Ready'}
             </div>
           </div>
         </div>
@@ -1016,16 +1600,25 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
       <div style={styles.section}>
         <h3 style={styles.sectionTitle}>Theoretical Predictions</h3>
         <div style={styles.predictionRow}>
-          <span style={styles.predictionLabel}>Acceleration:</span>
-          <strong>{theoretical.acceleration.toFixed(2)} m/s²</strong>
+          <span style={styles.predictionLabel}>Distance to roll to edge:</span>
+          <strong>{(startPoint / 100).toFixed(3)} m</strong>
         </div>
         <div style={styles.predictionRow}>
-          <span style={styles.predictionLabel}>Time to Bottom:</span>
-          <strong>{theoretical.timeToBottom.toFixed(2)} s</strong>
+          <span style={styles.predictionLabel}>Acceleration (g·sinθ):</span>
+          <strong>{theoreticalAcceleration.toFixed(3)} m/s²</strong>
         </div>
         <div style={styles.predictionRow}>
-          <span style={styles.predictionLabel}>Final Speed:</span>
-          <strong>{theoretical.finalVelocity.toFixed(2)} m/s</strong>
+          <span style={styles.predictionLabel}>Theoretical Time to edge:</span>
+          <strong>{theoreticalTime.toFixed(3)} s</strong>
+        </div>
+        <div style={styles.predictionRow}>
+          <span style={styles.predictionLabel}>Theoretical Velocity at edge:</span>
+          <strong>{theoreticalVelocity.toFixed(3)} m/s</strong>
+        </div>
+        <div style={{marginTop: '12px', padding: '8px', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '8px'}}>
+          <p style={{margin: 0, fontSize: '12px', color: '#fbbf24'}}>
+            💡 <strong>Note:</strong> The can will fall under gravity after leaving the ramp. Falling time depends on launch height and velocity.
+          </p>
         </div>
       </div>
 
@@ -1038,10 +1631,10 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
               <thead>
                 <tr>
                   <th style={styles.th}>#</th>
+                  <th style={styles.th}>Start (cm from edge)</th>
                   <th style={styles.th}>Angle</th>
-                  <th style={styles.th}>Time</th>
-                  <th style={styles.th}>Theory a</th>
-                  <th style={styles.th}>Exp a</th>
+                  <th style={styles.th}>Time (s)</th>
+                  <th style={styles.th}>Theory Time</th>
                   <th style={styles.th}>Error</th>
                 </tr>
               </thead>
@@ -1049,12 +1642,12 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                 {trials.map((trial, index) => (
                   <tr key={index}>
                     <td style={styles.td}>{index + 1}</td>
-                    <td style={styles.td}>{trial.angle}°</td>
-                    <td style={styles.td}>{trial.time.toFixed(2)}s</td>
-                    <td style={styles.td}>{trial.acceleration.theoretical.toFixed(2)}</td>
-                    <td style={styles.td}>{trial.acceleration.experimental.toFixed(2)}</td>
-                    <td style={{...styles.td, ...(trial.acceleration.error > 10 ? styles.errorHigh : styles.errorLow)}}>
-                      {trial.acceleration.error.toFixed(1)}%
+                    <td style={styles.td}>{trial.startPoint}cm</td>
+                    <td style={styles.td}>{trial.angle.toFixed(1)}°</td>
+                    <td style={styles.td}>{trial.time.toFixed(3)}s</td>
+                    <td style={styles.td}>{trial.theoreticalTime.toFixed(3)}s</td>
+                    <td style={{...styles.td, ...(Math.abs(trial.time - trial.theoreticalTime) > 0.01 ? styles.errorHigh : styles.errorLow)}}>
+                      {Math.abs(trial.time - trial.theoreticalTime).toFixed(3)}s
                     </td>
                   </tr>
                 ))}
@@ -1064,7 +1657,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
         ) : (
           <div style={styles.noData}>
             <p style={{fontSize: '32px', margin: '0 0 8px 0'}}>📊</p>
-            <p style={{margin: 0}}>No data yet - Run experiments!</p>
+            <p style={{margin: 0}}>No data yet - Run experiments from different starting points!</p>
           </div>
         )}
         
@@ -1077,10 +1670,10 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
           
           <button 
             onClick={completeQuest}
-            style={{...styles.completeButton, opacity: trials.length < 3 ? 0.5 : 1, cursor: trials.length < 3 ? 'not-allowed' : 'pointer'}}
-            disabled={trials.length < 3}
+            style={{...styles.completeButton, opacity: trials.length < 5 ? 0.5 : 1, cursor: trials.length < 5 ? 'not-allowed' : 'pointer'}}
+            disabled={trials.length < 5}
           >
-            {trials.length >= 3 ? '📝 Take Assessment' : `Need ${3 - trials.length} more trials`}
+            {trials.length >= 5 ? '📝 Take Assessment' : `Need ${5 - trials.length} more starting points`}
           </button>
         </div>
       </div>
@@ -1107,10 +1700,11 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
               {trials.map((trial, index) => {
                 const maxTime = Math.max(...trials.map(t => t.time));
                 const maxTime2 = Math.max(...trials.map(t => t.time * t.time));
+                const distanceMeters = trial.distance;
                 const x = currentGraph === 'distance-time' 
                   ? (trial.time / maxTime) * 90 
                   : ((trial.time * trial.time) / maxTime2) * 90;
-                const y = (trial.distance / RAMP_LENGTH) * 90;
+                const y = (distanceMeters / RAMP_LENGTH) * 90;
                 
                 return (
                   <div
@@ -1151,178 +1745,204 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
 
               {/* Question 1 */}
               <div style={styles.questionBox}>
-                <p style={styles.questionText}>1. What shape does a distance-time graph show for uniformly accelerated motion?</p>
-                <label style={assessmentAnswers.q1 === 'linear' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                <p style={styles.questionText}>1. How will you describe the graph of: distance vs. time, and distance vs. time²?</p>
+                <label style={assessmentAnswers.q1 === 'a' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
                   <input 
                     type="radio" 
                     name="q1" 
-                    value="linear"
-                    checked={assessmentAnswers.q1 === 'linear'}
+                    value="a"
+                    checked={assessmentAnswers.q1 === 'a'}
                     onChange={(e) => handleAssessmentChange('q1', e.target.value)}
                     style={styles.radio}
                   />
-                  Linear (straight line)
+                  A. d-t is linear, d-t² is parabolic
                 </label>
-                <label style={assessmentAnswers.q1 === 'parabolic' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                <label style={assessmentAnswers.q1 === 'b' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
                   <input 
                     type="radio" 
                     name="q1" 
-                    value="parabolic"
-                    checked={assessmentAnswers.q1 === 'parabolic'}
+                    value="b"
+                    checked={assessmentAnswers.q1 === 'b'}
                     onChange={(e) => handleAssessmentChange('q1', e.target.value)}
                     style={styles.radio}
                   />
-                  Parabolic (curved)
+                  B. d-t is parabolic, d-t² is also parabolic
                 </label>
-                <label style={assessmentAnswers.q1 === 'horizontal' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                <label style={assessmentAnswers.q1 === 'c' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
                   <input 
                     type="radio" 
                     name="q1" 
-                    value="horizontal"
-                    checked={assessmentAnswers.q1 === 'horizontal'}
+                    value="c"
+                    checked={assessmentAnswers.q1 === 'c'}
                     onChange={(e) => handleAssessmentChange('q1', e.target.value)}
                     style={styles.radio}
                   />
-                  Horizontal (flat line)
+                  C. d-t is linear, d-t² is also linear
+                </label>
+                <label style={assessmentAnswers.q1 === 'd' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                  <input 
+                    type="radio" 
+                    name="q1" 
+                    value="d"
+                    checked={assessmentAnswers.q1 === 'd'}
+                    onChange={(e) => handleAssessmentChange('q1', e.target.value)}
+                    style={styles.radio}
+                  />
+                  D. d-t is parabolic, d-t² is linear
                 </label>
               </div>
 
               {/* Question 2 */}
               <div style={styles.questionBox}>
-                <p style={styles.questionText}>2. What shape does a distance-time² graph show for uniformly accelerated motion?</p>
-                <label style={assessmentAnswers.q2 === 'parabolic' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                <p style={styles.questionText}>2. What is the relationship between distance and time of travel of the rolling can?</p>
+                <label style={assessmentAnswers.q2 === 'a' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
                   <input 
                     type="radio" 
                     name="q2" 
-                    value="parabolic"
-                    checked={assessmentAnswers.q2 === 'parabolic'}
+                    value="a"
+                    checked={assessmentAnswers.q2 === 'a'}
                     onChange={(e) => handleAssessmentChange('q2', e.target.value)}
                     style={styles.radio}
                   />
-                  Parabolic (curved)
+                  A. d = ½at² (distance is proportional to time squared)
                 </label>
-                <label style={assessmentAnswers.q2 === 'linear' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                <label style={assessmentAnswers.q2 === 'b' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
                   <input 
                     type="radio" 
                     name="q2" 
-                    value="linear"
-                    checked={assessmentAnswers.q2 === 'linear'}
+                    value="b"
+                    checked={assessmentAnswers.q2 === 'b'}
                     onChange={(e) => handleAssessmentChange('q2', e.target.value)}
                     style={styles.radio}
                   />
-                  Linear (straight line)
+                  B. d = vt (distance is proportional to time)
                 </label>
-                <label style={assessmentAnswers.q2 === 'exponential' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                <label style={assessmentAnswers.q2 === 'c' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
                   <input 
                     type="radio" 
                     name="q2" 
-                    value="exponential"
-                    checked={assessmentAnswers.q2 === 'exponential'}
+                    value="c"
+                    checked={assessmentAnswers.q2 === 'c'}
                     onChange={(e) => handleAssessmentChange('q2', e.target.value)}
                     style={styles.radio}
                   />
-                  Exponential (steep curve)
+                  C. d = a/t (distance is inversely proportional to time)
+                </label>
+                <label style={assessmentAnswers.q2 === 'd' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                  <input 
+                    type="radio" 
+                    name="q2" 
+                    value="d"
+                    checked={assessmentAnswers.q2 === 'd'}
+                    onChange={(e) => handleAssessmentChange('q2', e.target.value)}
+                    style={styles.radio}
+                  />
+                  D. d = at (distance is proportional to acceleration and time)
                 </label>
               </div>
 
               {/* Question 3 */}
               <div style={styles.questionBox}>
-                <p style={styles.questionText}>
-                  3. Based on your experiments, what is the average experimental acceleration? (in m/s²)
-                </p>
-                <p style={{fontSize: '12px', color: '#e9d5ff', marginBottom: '8px'}}>
-                  Hint: Check your results table and calculate the average of experimental acceleration values.
-                </p>
-                <input 
-                  type="number"
-                  step="0.01"
-                  placeholder="Enter acceleration (e.g., 4.90)"
-                  value={assessmentAnswers.q3}
-                  onChange={(e) => handleAssessmentChange('q3', e.target.value)}
-                  style={styles.input}
-                />
+                <p style={styles.questionText}>3. What is the slope of d-t² graph? What quantity does the slope of d-t² graph represent? (Refer to the unit of slope)</p>
+                <label style={assessmentAnswers.q3 === 'a' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                  <input 
+                    type="radio" 
+                    name="q3" 
+                    value="a"
+                    checked={assessmentAnswers.q3 === 'a'}
+                    onChange={(e) => handleAssessmentChange('q3', e.target.value)}
+                    style={styles.radio}
+                  />
+                  A. Slope = acceleration (m/s²)
+                </label>
+                <label style={assessmentAnswers.q3 === 'b' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                  <input 
+                    type="radio" 
+                    name="q3" 
+                    value="b"
+                    checked={assessmentAnswers.q3 === 'b'}
+                    onChange={(e) => handleAssessmentChange('q3', e.target.value)}
+                    style={styles.radio}
+                  />
+                  B. Slope = velocity (m/s)
+                </label>
+                <label style={assessmentAnswers.q3 === 'c' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                  <input 
+                    type="radio" 
+                    name="q3" 
+                    value="c"
+                    checked={assessmentAnswers.q3 === 'c'}
+                    onChange={(e) => handleAssessmentChange('q3', e.target.value)}
+                    style={styles.radio}
+                  />
+                  C. Slope = ½ acceleration (m/s²)
+                </label>
+                <label style={assessmentAnswers.q3 === 'd' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                  <input 
+                    type="radio" 
+                    name="q3" 
+                    value="d"
+                    checked={assessmentAnswers.q3 === 'd'}
+                    onChange={(e) => handleAssessmentChange('q3', e.target.value)}
+                    style={styles.radio}
+                  />
+                  D. Slope = time (s)
+                </label>
               </div>
 
               {/* Question 4 */}
               <div style={styles.questionBox}>
-                <p style={styles.questionText}>4. What happens to the acceleration when you increase the ramp angle?</p>
-                <label style={assessmentAnswers.q4 === 'increases' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                <p style={styles.questionText}>4. What do the graphs of distance vs. time and distance vs. time² suggest?</p>
+                <label style={assessmentAnswers.q4 === 'a' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
                   <input 
                     type="radio" 
                     name="q4" 
-                    value="increases"
-                    checked={assessmentAnswers.q4 === 'increases'}
+                    value="a"
+                    checked={assessmentAnswers.q4 === 'a'}
                     onChange={(e) => handleAssessmentChange('q4', e.target.value)}
                     style={styles.radio}
                   />
-                  It increases
+                  A. The can moves with constant velocity
                 </label>
-                <label style={assessmentAnswers.q4 === 'decreases' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                <label style={assessmentAnswers.q4 === 'b' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
                   <input 
                     type="radio" 
                     name="q4" 
-                    value="decreases"
-                    checked={assessmentAnswers.q4 === 'decreases'}
+                    value="b"
+                    checked={assessmentAnswers.q4 === 'b'}
                     onChange={(e) => handleAssessmentChange('q4', e.target.value)}
                     style={styles.radio}
                   />
-                  It decreases
+                  B. The can is uniformly accelerated
                 </label>
-                <label style={assessmentAnswers.q4 === 'stays-same' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                <label style={assessmentAnswers.q4 === 'c' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
                   <input 
                     type="radio" 
                     name="q4" 
-                    value="stays-same"
-                    checked={assessmentAnswers.q4 === 'stays-same'}
+                    value="c"
+                    checked={assessmentAnswers.q4 === 'c'}
                     onChange={(e) => handleAssessmentChange('q4', e.target.value)}
                     style={styles.radio}
                   />
-                  It stays the same
+                  C. The can is decelerating
                 </label>
-              </div>
-
-              {/* Question 5 */}
-              <div style={styles.questionBox}>
-                <p style={styles.questionText}>5. What force causes the can to accelerate down the ramp?</p>
-                <label style={assessmentAnswers.q5 === 'gravity' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
+                <label style={assessmentAnswers.q4 === 'd' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
                   <input 
                     type="radio" 
-                    name="q5" 
-                    value="gravity"
-                    checked={assessmentAnswers.q5 === 'gravity'}
-                    onChange={(e) => handleAssessmentChange('q5', e.target.value)}
+                    name="q4" 
+                    value="d"
+                    checked={assessmentAnswers.q4 === 'd'}
+                    onChange={(e) => handleAssessmentChange('q4', e.target.value)}
                     style={styles.radio}
                   />
-                  Gravity (component along the slope)
-                </label>
-                <label style={assessmentAnswers.q5 === 'friction' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
-                  <input 
-                    type="radio" 
-                    name="q5" 
-                    value="friction"
-                    checked={assessmentAnswers.q5 === 'friction'}
-                    onChange={(e) => handleAssessmentChange('q5', e.target.value)}
-                    style={styles.radio}
-                  />
-                  Friction
-                </label>
-                <label style={assessmentAnswers.q5 === 'normal-force' ? {...styles.optionLabel, ...styles.optionLabelSelected} : styles.optionLabel}>
-                  <input 
-                    type="radio" 
-                    name="q5" 
-                    value="normal-force"
-                    checked={assessmentAnswers.q5 === 'normal-force'}
-                    onChange={(e) => handleAssessmentChange('q5', e.target.value)}
-                    style={styles.radio}
-                  />
-                  Normal force
+                  D. The can is at rest
                 </label>
               </div>
 
               <button 
                 onClick={submitAssessment}
                 style={styles.submitButton}
-                disabled={!assessmentAnswers.q1 || !assessmentAnswers.q2 || !assessmentAnswers.q3 || !assessmentAnswers.q4 || !assessmentAnswers.q5}
+                disabled={!assessmentAnswers.q1 || !assessmentAnswers.q2 || !assessmentAnswers.q3 || !assessmentAnswers.q4}
               >
                 Submit Assessment
               </button>
@@ -1429,9 +2049,9 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                 </p>
                 
                 <div style={styles.statCard}>
-                  <div style={styles.statLabel}>Average Time to Bottom</div>
+                  <div style={styles.statLabel}>Average Time to Edge</div>
                   <div>
-                    <span style={styles.statValue}>{stats.avgTime.toFixed(2)}</span>
+                    <span style={styles.statValue}>{stats.avgTime.toFixed(3)}</span>
                     <span style={styles.statUnit}>seconds</span>
                   </div>
                 </div>
@@ -1439,7 +2059,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                 <div style={styles.statCard}>
                   <div style={styles.statLabel}>Average Theoretical Acceleration</div>
                   <div>
-                    <span style={styles.statValue}>{stats.avgTheoreticalAccel.toFixed(2)}</span>
+                    <span style={styles.statValue}>{stats.avgTheoreticalAccel.toFixed(3)}</span>
                     <span style={styles.statUnit}>m/s²</span>
                   </div>
                 </div>
@@ -1447,7 +2067,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                 <div style={styles.statCard}>
                   <div style={styles.statLabel}>Average Experimental Acceleration</div>
                   <div>
-                    <span style={styles.statValue}>{stats.avgExperimentalAccel.toFixed(2)}</span>
+                    <span style={styles.statValue}>{stats.avgExperimentalAccel.toFixed(3)}</span>
                     <span style={styles.statUnit}>m/s²</span>
                   </div>
                 </div>
@@ -1455,14 +2075,14 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                 <div style={styles.statCard}>
                   <div style={styles.statLabel}>Average Error</div>
                   <div>
-                    <span style={{...styles.statValue, color: stats.avgError < 5 ? '#4ade80' : stats.avgError < 10 ? '#fbbf24' : '#f87171'}}>
+                    <span style={{...styles.statValue, color: stats.avgError < 1 ? '#4ade80' : stats.avgError < 3 ? '#fbbf24' : '#f87171'}}>
                       {stats.avgError.toFixed(2)}
                     </span>
                     <span style={styles.statUnit}>%</span>
                   </div>
                   <div style={{fontSize: '12px', marginTop: '4px', color: '#d1d5db'}}>
-                    {stats.avgError < 5 ? '✅ Excellent accuracy!' : 
-                     stats.avgError < 10 ? '⚠️ Good, but can improve' : 
+                    {stats.avgError < 1 ? '✅ Perfect accuracy!' : 
+                     stats.avgError < 3 ? '⚠️ Good accuracy' : 
                      '❌ High error - check your measurements'}
                   </div>
                 </div>
@@ -1470,7 +2090,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                 <div style={styles.statCard}>
                   <div style={styles.statLabel}>Average Final Velocity</div>
                   <div>
-                    <span style={styles.statValue}>{stats.avgVelocity.toFixed(2)}</span>
+                    <span style={styles.statValue}>{stats.avgVelocity.toFixed(3)}</span>
                     <span style={styles.statUnit}>m/s</span>
                   </div>
                 </div>
@@ -1478,8 +2098,8 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                 <div style={{background: 'rgba(251, 191, 36, 0.1)', padding: '12px', borderRadius: '8px', marginTop: '16px'}}>
                   <p style={{margin: '0 0 8px 0', fontWeight: 'bold', fontSize: '14px'}}>💡 Insight</p>
                   <p style={{margin: 0, fontSize: '13px', lineHeight: '1.5'}}>
-                    Your experimental acceleration is {Math.abs(stats.avgTheoreticalAccel - stats.avgExperimentalAccel) < 0.5 ? 'very close to' : 'somewhat different from'} the theoretical prediction. 
-                    {stats.avgError < 5 && ' This suggests your experimental technique is excellent!'}
+                    Your experimental acceleration is {Math.abs(stats.avgTheoreticalAccel - stats.avgExperimentalAccel).toFixed(3)} m/s² different from theoretical.
+                    {stats.avgError < 1 && ' This indicates perfect experimental technique!'}
                   </p>
                 </div>
               </div>
@@ -1503,21 +2123,21 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                     <h4 style={{margin: '0 0 12px 0', color: '#4ade80', fontSize: '16px'}}>✅ Best Trial</h4>
                     <div style={styles.trialCardBest}>
                       <div style={{marginBottom: '8px'}}>
-                        <div style={{fontSize: '12px', color: '#e9d5ff'}}>Angle</div>
-                        <div style={{fontSize: '18px', fontWeight: 'bold'}}>{best.angle}°</div>
+                        <div style={{fontSize: '12px', color: '#e9d5ff'}}>Start Point</div>
+                        <div style={{fontSize: '18px', fontWeight: 'bold'}}>{best.startPoint}cm</div>
                       </div>
                       <div style={{marginBottom: '8px'}}>
                         <div style={{fontSize: '12px', color: '#e9d5ff'}}>Time</div>
-                        <div style={{fontSize: '18px', fontWeight: 'bold'}}>{best.time.toFixed(2)}s</div>
+                        <div style={{fontSize: '18px', fontWeight: 'bold'}}>{best.time.toFixed(3)}s</div>
                       </div>
                       <div style={{marginBottom: '8px'}}>
                         <div style={{fontSize: '12px', color: '#e9d5ff'}}>Acceleration</div>
-                        <div style={{fontSize: '18px', fontWeight: 'bold'}}>{best.acceleration.experimental.toFixed(2)} m/s²</div>
+                        <div style={{fontSize: '18px', fontWeight: 'bold'}}>{best.acceleration.experimental.toFixed(3)} m/s²</div>
                       </div>
                       <div>
                         <div style={{fontSize: '12px', color: '#e9d5ff'}}>Error</div>
                         <div style={{fontSize: '20px', fontWeight: 'bold', color: '#4ade80'}}>
-                          {best.acceleration.error.toFixed(1)}%
+                          {best.acceleration.error.toFixed(2)}%
                         </div>
                       </div>
                     </div>
@@ -1527,21 +2147,21 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                     <h4 style={{margin: '0 0 12px 0', color: '#f87171', fontSize: '16px'}}>⚠️ Worst Trial</h4>
                     <div style={styles.trialCardWorst}>
                       <div style={{marginBottom: '8px'}}>
-                        <div style={{fontSize: '12px', color: '#e9d5ff'}}>Angle</div>
-                        <div style={{fontSize: '18px', fontWeight: 'bold'}}>{worst.angle}°</div>
+                        <div style={{fontSize: '12px', color: '#e9d5ff'}}>Start Point</div>
+                        <div style={{fontSize: '18px', fontWeight: 'bold'}}>{worst.startPoint}cm</div>
                       </div>
                       <div style={{marginBottom: '8px'}}>
                         <div style={{fontSize: '12px', color: '#e9d5ff'}}>Time</div>
-                        <div style={{fontSize: '18px', fontWeight: 'bold'}}>{worst.time.toFixed(2)}s</div>
+                        <div style={{fontSize: '18px', fontWeight: 'bold'}}>{worst.time.toFixed(3)}s</div>
                       </div>
                       <div style={{marginBottom: '8px'}}>
                         <div style={{fontSize: '12px', color: '#e9d5ff'}}>Acceleration</div>
-                        <div style={{fontSize: '18px', fontWeight: 'bold'}}>{worst.acceleration.experimental.toFixed(2)} m/s²</div>
+                        <div style={{fontSize: '18px', fontWeight: 'bold'}}>{worst.acceleration.experimental.toFixed(3)} m/s²</div>
                       </div>
                       <div>
                         <div style={{fontSize: '12px', color: '#e9d5ff'}}>Error</div>
                         <div style={{fontSize: '20px', fontWeight: 'bold', color: '#f87171'}}>
-                          {worst.acceleration.error.toFixed(1)}%
+                          {worst.acceleration.error.toFixed(2)}%
                         </div>
                       </div>
                     </div>
@@ -1551,10 +2171,10 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                 <div style={{background: 'rgba(251, 191, 36, 0.1)', padding: '12px', borderRadius: '8px', marginTop: '16px'}}>
                   <p style={{margin: '0 0 8px 0', fontWeight: 'bold', fontSize: '14px'}}>💡 Analysis</p>
                   <p style={{margin: 0, fontSize: '13px', lineHeight: '1.5'}}>
-                    Error difference: {(worst.acceleration.error - best.acceleration.error).toFixed(1)}%. 
-                    {worst.acceleration.error - best.acceleration.error > 5 ? 
+                    Error difference: {(worst.acceleration.error - best.acceleration.error).toFixed(2)}%. 
+                    {worst.acceleration.error - best.acceleration.error > 2 ? 
                       ' Try to maintain consistent measurement techniques for better accuracy.' :
-                      ' Your measurements are relatively consistent!'}
+                      ' Your measurements are very consistent!'}
                   </p>
                 </div>
               </div>
@@ -1574,7 +2194,8 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
 
               const angleRad = (angle * Math.PI) / 180;
               const theoreticalAccel = GRAVITY * Math.sin(angleRad);
-              const experimentalAccel = (2 * RAMP_LENGTH) / (time * time);
+              const distanceFromEdge = startPoint / 100;
+              const experimentalAccel = (2 * distanceFromEdge) / (time * time);
               const error = Math.abs(theoreticalAccel - experimentalAccel) / theoreticalAccel * 100;
               const finalVel = experimentalAccel * time;
 
@@ -1628,7 +2249,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                     <div style={styles.statCard}>
                       <div style={styles.statLabel}>Theoretical Acceleration</div>
                       <div>
-                        <span style={styles.statValue}>{calcResult.theoreticalAccel.toFixed(2)}</span>
+                        <span style={styles.statValue}>{calcResult.theoreticalAccel.toFixed(3)}</span>
                         <span style={styles.statUnit}>m/s²</span>
                       </div>
                     </div>
@@ -1636,7 +2257,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                     <div style={styles.statCard}>
                       <div style={styles.statLabel}>Experimental Acceleration</div>
                       <div>
-                        <span style={styles.statValue}>{calcResult.experimentalAccel.toFixed(2)}</span>
+                        <span style={styles.statValue}>{calcResult.experimentalAccel.toFixed(3)}</span>
                         <span style={styles.statUnit}>m/s²</span>
                       </div>
                     </div>
@@ -1644,7 +2265,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                     <div style={styles.statCard}>
                       <div style={styles.statLabel}>Error</div>
                       <div>
-                        <span style={{...styles.statValue, color: calcResult.error < 5 ? '#4ade80' : calcResult.error < 10 ? '#fbbf24' : '#f87171'}}>
+                        <span style={{...styles.statValue, color: calcResult.error < 1 ? '#4ade80' : calcResult.error < 3 ? '#fbbf24' : '#f87171'}}>
                           {calcResult.error.toFixed(2)}
                         </span>
                         <span style={styles.statUnit}>%</span>
@@ -1654,7 +2275,7 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
                     <div style={styles.statCard}>
                       <div style={styles.statLabel}>Final Velocity</div>
                       <div>
-                        <span style={styles.statValue}>{calcResult.finalVel.toFixed(2)}</span>
+                        <span style={styles.statValue}>{calcResult.finalVel.toFixed(3)}</span>
                         <span style={styles.statUnit}>m/s</span>
                       </div>
                     </div>

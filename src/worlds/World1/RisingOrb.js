@@ -15,24 +15,94 @@ const RisingOrb = ({ onComplete, navigate }) => {
   const [landingVelocity, setLandingVelocity] = useState(0);
   const [showAssessment, setShowAssessment] = useState(false);
   const [assessmentScore, setAssessmentScore] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedOptions, setSelectedOptions] = useState({});
+  const [assessmentCompleted, setAssessmentCompleted] = useState(false);
+  const [assessmentBlocked, setAssessmentBlocked] = useState(false);
+  const [questCompleted, setQuestCompleted] = useState(false);
+
+  // Assessment questions
+  const ASSESSMENT_QUESTIONS = [
+    {
+      id: 1,
+      question: "What do you think happens to the speed of the ball as it reaches its maximum height?",
+      options: [
+        { 
+          id: 'a', 
+          text: "It becomes zero", 
+          description: "Based on experiments: At the peak height, the vertical velocity momentarily becomes zero",
+          isCorrect: true
+        },
+        { 
+          id: 'b', 
+          text: "It becomes maximum", 
+          description: "Based on experiments: Velocity is maximum at launch, not at the peak",
+          isCorrect: false
+        },
+        { 
+          id: 'c', 
+          text: "It remains constant", 
+          description: "Based on experiments: Velocity constantly changes due to gravity",
+          isCorrect: false
+        },
+        { 
+          id: 'd', 
+          text: "It increases rapidly", 
+          description: "Based on experiments: Velocity decreases going up, then increases coming down",
+          isCorrect: false
+        }
+      ],
+      explanation: "At maximum height, the ball's vertical velocity becomes zero momentarily before starting to fall back down due to gravity. This can be observed in the simulator when the orb pauses briefly at its peak height."
+    },
+    {
+      id: 2,
+      question: "What will happen to the ball's velocity as it falls farther below the point of release?",
+      options: [
+        { 
+          id: 'a', 
+          text: "It continues increasing", 
+          description: "Based on experiments: Gravity accelerates the ball downward continuously",
+          isCorrect: true
+        },
+        { 
+          id: 'b', 
+          text: "It decreases to zero", 
+          description: "Based on experiments: Velocity only becomes zero at the peak, not during fall",
+          isCorrect: false
+        },
+        { 
+          id: 'c', 
+          text: "It becomes constant", 
+          description: "Based on experiments: Gravity causes continuous acceleration",
+          isCorrect: false
+        },
+        { 
+          id: 'd', 
+          text: "It stops changing", 
+          description: "Based on experiments: Velocity changes throughout the motion",
+          isCorrect: false
+        }
+      ],
+      explanation: "As the ball falls below its release point, gravity continues to accelerate it downward, causing its velocity to increase continuously. This can be observed in the simulator's velocity display during descent."
+    }
+  ];
 
   // Physics constants
   const GRAVITY = 9.81;
   const PIXELS_PER_METER = 5;
-  const SUCCESS_THRESHOLD = 1.0;
+  const SUCCESS_THRESHOLD = 0.5;
   const PLATFORM_TOLERANCE = 0.5;
 
-  // Platform height options (randomly selected)
-  const platformHeights = [20, 25, 30, 35, 40, 45, 50];
+  // Platform height options (modified for perfect matches)
+  const platformHeights = [20, 25, 30, 35, 40, 45];
 
-  // Velocity options
+  // Velocity options (modified for perfect matches)
   const velocityOptions = [
     { value: 15, label: '15 m/s', description: 'Very Low', icon: '🐌' },
     { value: 20, label: '20 m/s', description: 'Low', icon: '🚶' },
     { value: 25, label: '25 m/s', description: 'Medium', icon: '🏃' },
     { value: 30, label: '30 m/s', description: 'High', icon: '⚡' },
-    { value: 35, label: '35 m/s', description: 'Very High', icon: '🚀' },
-    { value: 40, label: '40 m/s', description: 'Extreme', icon: '🌠' }
+    { value: 35, label: '35 m/s', description: 'Very High', icon: '🚀' }
   ];
 
   const timerRef = useRef(null);
@@ -45,15 +115,115 @@ const RisingOrb = ({ onComplete, navigate }) => {
     generateRandomHeight();
   }, []);
 
+  // Add CSS animations once
+  useEffect(() => {
+    // Check if animations are already added
+    if (!document.getElementById('orb-animations')) {
+      const style = document.createElement('style');
+      style.id = 'orb-animations';
+      style.textContent = `
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.7; }
+          100% { opacity: 1; }
+        }
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+          from { transform: translateX(0); opacity: 1; }
+          to { transform: translateX(100%); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
+  // Show notification when assessment is required
+  useEffect(() => {
+    if (assessmentBlocked && !assessmentCompleted) {
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(45deg, #f59e0b, #eab308);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        z-index: 1003;
+        font-weight: bold;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        animation: slideIn 0.3s ease;
+        max-width: 300px;
+      `;
+      notification.innerHTML = '📊 Assessment Required! Complete it to continue.';
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+          }
+        }, 300);
+      }, 5000);
+      
+      return () => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      };
+    }
+  }, [assessmentBlocked, assessmentCompleted]);
+
+  // Generate perfect heights for each velocity option
+  const generatePerfectHeight = () => {
+    const perfectHeights = velocityOptions.map(option => {
+      const velocity = option.value;
+      const height = (velocity * velocity) / (2 * GRAVITY);
+      return Math.round(height);
+    });
+    
+    // Remove duplicates and sort
+    const uniqueHeights = [...new Set(perfectHeights)].sort((a, b) => a - b);
+    
+    // Select a random perfect height
+    const randomIndex = Math.floor(Math.random() * uniqueHeights.length);
+    return uniqueHeights[randomIndex];
+  };
+
   const generateRandomHeight = () => {
-    const randomIndex = Math.floor(Math.random() * platformHeights.length);
-    setTargetHeight(platformHeights[randomIndex]);
+    // Use perfect heights 70% of the time, random heights 30% of the time
+    const usePerfectHeight = Math.random() < 0.7;
+    
+    if (usePerfectHeight) {
+      const perfectHeight = generatePerfectHeight();
+      setTargetHeight(perfectHeight);
+    } else {
+      const randomIndex = Math.floor(Math.random() * platformHeights.length);
+      setTargetHeight(platformHeights[randomIndex]);
+    }
+    
     resetLaunch();
   };
 
   // Calculate required velocity for the platform height
   const calculateRequiredVelocity = (height) => {
-    return Math.sqrt(2 * GRAVITY * height);
+    const exactVelocity = Math.sqrt(2 * GRAVITY * height);
+    
+    // Find the closest available velocity option
+    const availableVelocities = velocityOptions.map(v => v.value);
+    const closestVelocity = availableVelocities.reduce((prev, curr) => {
+      return Math.abs(curr - exactVelocity) < Math.abs(prev - exactVelocity) ? curr : prev;
+    });
+    
+    return {
+      exact: exactVelocity,
+      closest: closestVelocity,
+      isPerfect: Math.abs(closestVelocity - exactVelocity) < 0.5
+    };
   };
 
   // Calculate max height from velocity
@@ -76,7 +246,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
   };
 
   // Calculate assessment score based on performance
-  const calculateAssessmentScore = () => {
+  const calculatePerformanceScore = () => {
     if (trials.length === 0) return 0;
     
     const recentTrials = trials.slice(-5);
@@ -119,93 +289,266 @@ const RisingOrb = ({ onComplete, navigate }) => {
     };
   };
 
+  // Handle option selection in assessment
+  const handleSelectOption = (questionId, optionId) => {
+    setSelectedOptions(prev => ({
+      ...prev,
+      [questionId]: optionId
+    }));
+  };
+
+  const handleNextQuestion = () => {
+    if (currentQuestion < ASSESSMENT_QUESTIONS.length - 1) {
+      setCurrentQuestion(prev => prev + 1);
+    } else {
+      calculateAssessmentScore();
+    }
+  };
+
+  const handlePreviousQuestion = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(prev => prev - 1);
+    }
+  };
+
+  const calculateAssessmentScore = () => {
+    let correct = 0;
+    ASSESSMENT_QUESTIONS.forEach(question => {
+      const userAnswer = selectedOptions[question.id];
+      const correctOption = question.options.find(opt => opt.isCorrect);
+      if (userAnswer === correctOption.id) {
+        correct++;
+      }
+    });
+    
+    const score = Math.round((correct / ASSESSMENT_QUESTIONS.length) * 100);
+    setAssessmentScore(score);
+    setAssessmentCompleted(true);
+  };
+
   // Assessment component
   const AssessmentPanel = () => {
-    const score = assessmentScore;
-    const feedback = getPerformanceFeedback(score);
+    const currentQuestionData = ASSESSMENT_QUESTIONS[currentQuestion];
+    const userAnswer = selectedOptions[currentQuestionData?.id];
+    const correctOption = currentQuestionData?.options.find(opt => opt.isCorrect);
     
+    if (assessmentCompleted) {
+      const feedback = getPerformanceFeedback(assessmentScore);
+      
+      return (
+        <div style={styles.assessmentOverlay}>
+          <div style={styles.assessmentContent}>
+            <div style={styles.assessmentHeader}>
+              <h2>🎯 Physics Concepts Assessment</h2>
+              <p>Review your understanding of projectile motion</p>
+            </div>
+            
+            <div style={styles.scoreSection}>
+              <div style={styles.scoreCircle(assessmentScore)}>
+                <div style={styles.scoreValue}>{assessmentScore}</div>
+                <div style={styles.scoreLabel}>SCORE</div>
+              </div>
+              <div style={styles.performanceLevel(feedback.color)}>
+                {feedback.level}
+              </div>
+            </div>
+            
+            <div style={styles.feedbackSection}>
+              <h3>Assessment Results</h3>
+              <p>{feedback.feedback}</p>
+              
+              <div style={styles.questionsReview}>
+                {ASSESSMENT_QUESTIONS.map((question, index) => {
+                  const userAnswerId = selectedOptions[question.id];
+                  const userOption = question.options.find(opt => opt.id === userAnswerId);
+                  const correctOption = question.options.find(opt => opt.isCorrect);
+                  
+                  return (
+                    <div 
+                      key={question.id}
+                      style={{
+                        ...styles.questionReviewItem,
+                        borderColor: userAnswerId === correctOption.id ? '#22c55e' : '#ef4444'
+                      }}
+                    >
+                      <div style={styles.questionReviewHeader}>
+                        <strong>Question {index + 1}:</strong>
+                        <span style={{
+                          color: userAnswerId === correctOption.id ? '#22c55e' : '#ef4444',
+                          fontWeight: 'bold'
+                        }}>
+                          {userAnswerId === correctOption.id ? '✓ Correct' : '✗ Incorrect'}
+                        </span>
+                      </div>
+                      <p style={styles.questionText}>{question.question}</p>
+                      <div style={styles.answerReview}>
+                        <div>
+                          <strong>Your answer:</strong> 
+                          <span style={{color: userAnswerId === correctOption.id ? '#22c55e' : '#ef4444'}}>
+                            {" "}{userOption?.text || 'Not answered'}
+                          </span>
+                        </div>
+                        {userAnswerId !== correctOption.id && (
+                          <div>
+                            <strong>Correct answer:</strong> 
+                            <span style={{color: '#22c55e'}}> {correctOption.text}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div style={styles.questionExplanation}>
+                        <strong>Explanation:</strong> {question.explanation}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
+            <div style={styles.assessmentActions}>
+              <button 
+                style={styles.continueButton}
+                onClick={() => {
+                  setShowAssessment(false);
+                  setAssessmentCompleted(true);
+                  setCurrentQuestion(0);
+                  setSelectedOptions({});
+                  setAssessmentBlocked(false); // Unblock progression
+                }}
+              >
+                Return to Simulator
+              </button>
+              <button 
+                style={styles.restartButton}
+                onClick={() => {
+                  setAssessmentCompleted(false);
+                  setCurrentQuestion(0);
+                  setSelectedOptions({});
+                }}
+              >
+                Retake Assessment
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div style={styles.assessmentOverlay}>
         <div style={styles.assessmentContent}>
           <div style={styles.assessmentHeader}>
-            <h2>🎯 Performance Assessment</h2>
-            <p>Based on your recent launches</p>
-          </div>
-          
-          <div style={styles.scoreSection}>
-            <div style={styles.scoreCircle(score)}>
-              <div style={styles.scoreValue}>{score}</div>
-              <div style={styles.scoreLabel}>SCORE</div>
+            <h2>🧠 Physics Concepts Assessment</h2>
+            <p>Based on your simulator experiments</p>
+            <div style={styles.progressBar}>
+              <div style={{
+                width: `${((currentQuestion + 1) / ASSESSMENT_QUESTIONS.length) * 100}%`,
+                height: '4px',
+                background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
+                borderRadius: '2px',
+                transition: 'width 0.3s ease'
+              }}></div>
             </div>
-            <div style={styles.performanceLevel(feedback.color)}>
-              {feedback.level}
-            </div>
-          </div>
-          
-          <div style={styles.feedbackSection}>
-            <h3>Performance Feedback</h3>
-            <p>{feedback.feedback}</p>
-          </div>
-          
-          <div style={styles.detailedAnalysis}>
-            <h3>📊 Detailed Analysis</h3>
-            <div style={styles.analysisGrid}>
-              <div style={styles.analysisItem}>
-                <span>Total Launches:</span>
-                <strong>{trials.length}</strong>
-              </div>
-              <div style={styles.analysisItem}>
-                <span>Successful Landings:</span>
-                <strong>{trials.filter(t => t.success).length}</strong>
-              </div>
-              <div style={styles.analysisItem}>
-                <span>Success Rate:</span>
-                <strong>{trials.length > 0 ? Math.round((trials.filter(t => t.success).length / trials.length) * 100) : 0}%</strong>
-              </div>
-              <div style={styles.analysisItem}>
-                <span>Average Accuracy:</span>
-                <strong>{trials.length > 0 ? (trials.reduce((sum, t) => sum + t.accuracy, 0) / trials.length).toFixed(1) : 0}%</strong>
-              </div>
+            <div style={styles.progressText}>
+              Question {currentQuestion + 1} of {ASSESSMENT_QUESTIONS.length}
             </div>
           </div>
           
-          <div style={styles.physicsUnderstanding}>
-            <h3>🧠 Physics Understanding</h3>
-            <div style={styles.conceptCheck}>
-              <p><strong>Key Concept Mastered:</strong> Relationship between launch velocity and maximum height</p>
-              <p><strong>Formula Applied:</strong> h = v² ÷ (2g) where g = 9.81 m/s²</p>
-              <p><strong>Skills Demonstrated:</strong> Velocity prediction, Height calculation, Precision adjustment</p>
+          <div style={styles.questionSection}>
+            <h3 style={styles.questionTitle}>
+              Q{currentQuestion + 1}: {currentQuestionData?.question}
+            </h3>
+            
+            <div style={styles.optionsGrid}>
+              {currentQuestionData?.options.map(option => (
+                <button
+                  key={option.id}
+                  onClick={() => handleSelectOption(currentQuestionData.id, option.id)}
+                  style={{
+                    ...styles.optionButton,
+                    ...(selectedOptions[currentQuestionData.id] === option.id ? styles.optionSelected : {})
+                  }}
+                >
+                  <div style={styles.optionHeader}>
+                    <div style={styles.optionLetter}>{option.id.toUpperCase()}</div>
+                    <div style={styles.optionText}>{option.text}</div>
+                    {selectedOptions[currentQuestionData.id] === option.id && (
+                      <div style={styles.optionSelectedIcon}>✓</div>
+                    )}
+                  </div>
+                  <div style={styles.optionDescription}>{option.description}</div>
+                </button>
+              ))}
             </div>
-          </div>
-          
-          <div style={styles.improvementTips}>
-            <h3>💡 Tips for Improvement</h3>
-            <ul style={styles.tipsList}>
-              {score < 80 && <li>• Practice with different platform heights to build intuition</li>}
-              {score < 70 && <li>• Pay attention to how small velocity changes affect the maximum height</li>}
-              {score < 90 && <li>• Try to land 3 perfect landings in a row to master precision</li>}
-              <li>• Remember: Higher velocity = Higher maximum height</li>
-            </ul>
           </div>
           
           <div style={styles.assessmentActions}>
             <button 
-              style={styles.continueButton}
-              onClick={() => setShowAssessment(false)}
+              style={styles.previousButton}
+              onClick={handlePreviousQuestion}
+              disabled={currentQuestion === 0}
             >
-              Continue Practicing
+              ← Previous
             </button>
-            <button 
-              style={styles.restartButton}
-              onClick={() => {
-                setTrials([]);
-                setShowAssessment(false);
-                generateRandomHeight();
-              }}
-            >
-              Start Fresh
-            </button>
+            
+            {currentQuestion < ASSESSMENT_QUESTIONS.length - 1 ? (
+              <button 
+                style={styles.nextButton}
+                onClick={handleNextQuestion}
+                disabled={!selectedOptions[currentQuestionData?.id]}
+              >
+                Next Question →
+              </button>
+            ) : (
+              <button 
+                style={styles.submitButton}
+                onClick={calculateAssessmentScore}
+                disabled={!selectedOptions[currentQuestionData?.id]}
+              >
+                Submit Assessment
+              </button>
+            )}
           </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Blocking overlay component
+  const AssessmentBlockingOverlay = () => {
+    return (
+      <div style={styles.blockingOverlay}>
+        <div style={styles.blockingContent}>
+          <div style={styles.blockingIcon}>📊</div>
+          <h2>Assessment Required</h2>
+          <p>You need to complete the physics assessment before you can continue to the next quest.</p>
+          <p>The assessment will test your understanding of the concepts you've practiced in the simulator.</p>
+          <div style={styles.assessmentInfo}>
+            <p><strong>What to expect:</strong></p>
+            <ul style={styles.assessmentList}>
+              <li>2 questions about projectile motion</li>
+              <li>Based on your simulator experiments</li>
+              <li>Multiple choice with explanations</li>
+              <li>You must score at least 50% to proceed</li>
+            </ul>
+          </div>
+          <button 
+            style={styles.startAssessmentButton}
+            onClick={() => {
+              setShowAssessment(true);
+            }}
+          >
+            Start Assessment Now
+          </button>
+          <button 
+            style={styles.reviewPracticeButton}
+            onClick={() => {
+              setAssessmentBlocked(false);
+              generateRandomHeight();
+            }}
+          >
+            Practice More First
+          </button>
+          <p style={styles.note}>Note: You cannot proceed to the next quest until you complete this assessment.</p>
         </div>
       </div>
     );
@@ -234,7 +577,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
   };
 
   const animateOrb = () => {
-    const requiredVelocity = calculateRequiredVelocity(targetHeight);
+    const velocityInfo = calculateRequiredVelocity(targetHeight);
     const totalTime = calculateAirtimeFromVelocity(selectedVelocity);
     let startTime = Date.now();
     let hasLandedOnPlatform = false;
@@ -259,7 +602,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
         hasPassedPlatformHeight = true;
       }
       
-      const velocityDifference = Math.abs(selectedVelocity - requiredVelocity);
+      const velocityDifference = Math.abs(selectedVelocity - velocityInfo.exact);
       const canLandOnPlatform = velocityDifference <= SUCCESS_THRESHOLD;
       
       if (isAtPlatformHeight && canLandOnPlatform && !hasLandedOnPlatform) {
@@ -309,11 +652,11 @@ const RisingOrb = ({ onComplete, navigate }) => {
     setIsLaunching(false);
     
     const maxHeight = calculateMaxHeight(selectedVelocity);
-    const requiredVelocity = calculateRequiredVelocity(targetHeight);
+    const velocityInfo = calculateRequiredVelocity(targetHeight);
     
     setCalculatedHeight(maxHeight);
     
-    const velocityDifference = Math.abs(selectedVelocity - requiredVelocity);
+    const velocityDifference = Math.abs(selectedVelocity - velocityInfo.exact);
     const isSuccessful = landedOnPlatform && velocityDifference <= SUCCESS_THRESHOLD;
     setSuccess(isSuccessful);
     
@@ -322,12 +665,12 @@ const RisingOrb = ({ onComplete, navigate }) => {
       targetHeight,
       selectedVelocity,
       calculatedHeight: maxHeight,
-      requiredVelocity,
+      requiredVelocity: velocityInfo.exact,
       airTime: parseFloat(airTime),
       velocityDifference,
       landingVelocity: landedOnPlatform ? landingVelocity : 0,
       landedOnPlatform,
-      accuracy: Math.max(0, 100 - (velocityDifference / requiredVelocity) * 100),
+      accuracy: Math.max(0, 100 - (velocityDifference / velocityInfo.exact) * 100),
       success: isSuccessful,
       timestamp: new Date().toLocaleTimeString()
     };
@@ -335,8 +678,8 @@ const RisingOrb = ({ onComplete, navigate }) => {
     setTrials(prev => [...prev, newTrial]);
     setShowResults(true);
     
-    // Update assessment score
-    setAssessmentScore(calculateAssessmentScore());
+    // Update performance score
+    setAssessmentScore(calculatePerformanceScore());
     
     const successfulTrials = trials.filter(t => t.success).length + (isSuccessful ? 1 : 0);
     if (successfulTrials >= 3) {
@@ -345,10 +688,11 @@ const RisingOrb = ({ onComplete, navigate }) => {
       }, 2000);
     }
 
-    // Show assessment after 5 trials
-    if (trials.length >= 4) {
+    // Show assessment after 4 trials (mandatory)
+    if (trials.length >= 3 && !assessmentBlocked && !assessmentCompleted) {
       setTimeout(() => {
         setShowAssessment(true);
+        setAssessmentBlocked(true);
       }, 3000);
     }
   };
@@ -374,8 +718,28 @@ const RisingOrb = ({ onComplete, navigate }) => {
   };
 
   const completeQuest = () => {
+    // Check if assessment has been completed
+    if (assessmentBlocked && !assessmentCompleted) {
+      alert("You must complete the assessment to proceed! Your assessment will start now.");
+      setShowAssessment(true);
+      setShowReward(false);
+      return;
+    }
+    
+    // Mark quest as completed
+    setQuestCompleted(true);
     setShowReward(false);
-    if (onComplete) onComplete();
+    
+    // Call the onComplete callback with assessment score
+    if (onComplete) {
+      onComplete({
+        completed: true,
+        assessmentScore: assessmentScore,
+        trials: trials.length,
+        successfulTrials: trials.filter(t => t.success).length,
+        performance: getPerformanceFeedback(assessmentScore).level
+      });
+    }
   };
 
   useEffect(() => {
@@ -389,9 +753,20 @@ const RisingOrb = ({ onComplete, navigate }) => {
     };
   }, []);
 
-  const requiredVelocity = calculateRequiredVelocity(targetHeight);
+  const velocityInfo = calculateRequiredVelocity(targetHeight);
+  const requiredVelocity = velocityInfo.exact;
+  const closestVelocity = velocityInfo.closest;
+  const isPerfectVelocity = velocityInfo.isPerfect;
   const successfulTrials = trials.filter(t => t.success).length;
   const currentMaxHeight = calculateMaxHeight(selectedVelocity);
+
+  // Helper for perfect velocity display
+  const perfectVelocityDisplay = () => {
+    if (isPerfectVelocity) {
+      return `${requiredVelocity.toFixed(1)} m/s (Available: ${closestVelocity} m/s)`;
+    }
+    return `${requiredVelocity.toFixed(1)} m/s (Closest: ${closestVelocity} m/s)`;
+  };
 
   return (
     <div style={styles.container(isMobile)}>
@@ -404,9 +779,12 @@ const RisingOrb = ({ onComplete, navigate }) => {
           {trials.length >= 3 && (
             <button 
               style={styles.assessmentButton}
-              onClick={() => setShowAssessment(true)}
+              onClick={() => {
+                setShowAssessment(true);
+                setAssessmentBlocked(true);
+              }}
             >
-              📊 View Assessment
+              📊 Assessment Required
             </button>
           )}
         </div>
@@ -416,6 +794,11 @@ const RisingOrb = ({ onComplete, navigate }) => {
           Perfect Landings: {successfulTrials}/3
           {trials.length > 0 && (
             <span style={styles.trialCount}> • Trials: {trials.length}</span>
+          )}
+          {assessmentBlocked && !assessmentCompleted && (
+            <span style={{color: '#ef4444', marginLeft: '10px', fontWeight: 'bold'}}>
+              • Assessment Required!
+            </span>
           )}
         </div>
       </div>
@@ -435,6 +818,11 @@ const RisingOrb = ({ onComplete, navigate }) => {
             🔄 New Platform
           </button>
         </div>
+        {assessmentBlocked && !assessmentCompleted && (
+          <div style={styles.assessmentWarning}>
+            ⚠️ Complete the assessment to unlock the next quest!
+          </div>
+        )}
       </div>
 
       {/* Mobile Layout */}
@@ -549,7 +937,9 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
               <div style={styles.infoRow}>
                 <span>Perfect Velocity:</span>
-                <strong style={{color: '#22c55e'}}>{requiredVelocity.toFixed(1)} m/s</strong>
+                <strong style={{color: isPerfectVelocity ? '#22c55e' : '#f59e0b'}}>
+                  {perfectVelocityDisplay()}
+                </strong>
               </div>
               <div style={styles.infoRow}>
                 <span>Your Velocity:</span>
@@ -711,7 +1101,12 @@ const RisingOrb = ({ onComplete, navigate }) => {
               <div style={styles.platformLabel}>
                 {targetHeight} Meter Platform
                 <div style={styles.requiredVelocity}>
-                  Perfect Velocity: {requiredVelocity.toFixed(1)} m/s
+                  Perfect Velocity: {perfectVelocityDisplay()}
+                  {!isPerfectVelocity && (
+                    <div style={{fontSize: '0.7rem', color: '#f59e0b'}}>
+                      (Select {closestVelocity} m/s for closest match)
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -817,8 +1212,13 @@ const RisingOrb = ({ onComplete, navigate }) => {
                 </button>
               </div>
               <div style={styles.perfectVelocity}>
-                Perfect Velocity: <strong>{requiredVelocity.toFixed(1)} m/s</strong>
+                Perfect Velocity: <strong>{perfectVelocityDisplay()}</strong>
               </div>
+              {assessmentBlocked && !assessmentCompleted && (
+                <div style={styles.mandatoryAssessment}>
+                  <strong>⚠️ MANDATORY ASSESSMENT:</strong> Complete the physics assessment to unlock the next quest!
+                </div>
+              )}
             </div>
 
             {/* Velocity Selection */}
@@ -970,8 +1370,8 @@ const RisingOrb = ({ onComplete, navigate }) => {
                       <p><strong>Try This:</strong></p>
                       <p>
                         {selectedVelocity < requiredVelocity 
-                          ? `Increase velocity to ~${requiredVelocity.toFixed(1)} m/s` 
-                          : `Decrease velocity to ~${requiredVelocity.toFixed(1)} m/s`}
+                          ? `Increase velocity to ~${closestVelocity} m/s` 
+                          : `Decrease velocity to ~${closestVelocity} m/s`}
                       </p>
                       <p><em>The orb will only land on the platform with the exact velocity!</em></p>
                     </div>
@@ -1046,17 +1446,33 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             </div>
             <button 
-              style={styles.rewardButton}
+              style={{
+                ...styles.rewardButton,
+                ...(assessmentBlocked && !assessmentCompleted ? { 
+                  opacity: 0.5, 
+                  cursor: 'not-allowed',
+                  background: 'linear-gradient(45deg, #6b7280, #9ca3af)'
+                } : {})
+              }}
               onClick={completeQuest}
+              disabled={assessmentBlocked && !assessmentCompleted}
             >
-              Continue Journey
+              {assessmentBlocked && !assessmentCompleted ? 'Complete Assessment First' : 'Continue Journey'}
             </button>
+            {assessmentBlocked && !assessmentCompleted && (
+              <p style={{marginTop: '15px', color: '#ef4444', fontSize: '0.9rem'}}>
+                You must complete the physics assessment before proceeding to the next quest.
+              </p>
+            )}
           </div>
         </div>
       )}
 
       {/* Assessment Panel */}
       {showAssessment && <AssessmentPanel />}
+
+      {/* Blocking Overlay (prevents progression until assessment is completed) */}
+      {assessmentBlocked && !assessmentCompleted && !showAssessment && <AssessmentBlockingOverlay />}
     </div>
   );
 };
@@ -1090,7 +1506,7 @@ const styles = {
     fontSize: '14px'
   },
   assessmentButton: {
-    background: 'linear-gradient(45deg, #8b5cf6, #a855f7)',
+    background: 'linear-gradient(45deg, #ef4444, #dc2626)',
     border: 'none',
     color: 'white',
     padding: '10px 15px',
@@ -1131,6 +1547,15 @@ const styles = {
     marginBottom: '20px',
     textAlign: 'center',
     border: '2px solid rgba(96, 165, 250, 0.3)'
+  },
+  assessmentWarning: {
+    background: 'rgba(239, 68, 68, 0.2)',
+    color: '#ef4444',
+    padding: '8px 12px',
+    borderRadius: '8px',
+    marginTop: '10px',
+    border: '1px solid rgba(239, 68, 68, 0.5)',
+    fontWeight: '600'
   },
   platformInfo: {
     display: 'flex',
@@ -1310,6 +1735,16 @@ const styles = {
     fontWeight: 'bold',
     color: '#22c55e',
     border: '1px solid rgba(34, 197, 94, 0.4)'
+  },
+  mandatoryAssessment: {
+    background: 'rgba(239, 68, 68, 0.2)',
+    color: '#ef4444',
+    padding: '10px',
+    borderRadius: '8px',
+    marginTop: '10px',
+    border: '2px solid rgba(239, 68, 68, 0.5)',
+    fontWeight: '600',
+    fontSize: '0.9rem'
   },
 
   // Platform
@@ -1955,7 +2390,8 @@ const styles = {
     color: 'white',
     fontWeight: 'bold',
     fontSize: '1.1rem',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    width: '100%'
   },
 
   // Assessment Styles
@@ -2040,46 +2476,108 @@ const styles = {
     background: 'rgba(255, 255, 255, 0.1)',
     borderRadius: '10px'
   },
-  detailedAnalysis: {
+  progressBar: {
+    width: '100%',
+    background: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: '2px',
+    margin: '15px 0 8px 0'
+  },
+  progressText: {
+    textAlign: 'center',
+    fontSize: '0.9rem',
+    opacity: 0.8,
+    marginBottom: '20px'
+  },
+  questionSection: {
     marginBottom: '25px'
   },
-  analysisGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '10px',
-    marginTop: '15px'
+  questionTitle: {
+    fontSize: '1.2rem',
+    marginBottom: '25px',
+    lineHeight: '1.4'
   },
-  analysisItem: {
+  optionsGrid: {
+    display: 'grid',
+    gap: '12px',
+    marginBottom: '20px'
+  },
+  optionButton: {
+    padding: '18px',
+    background: 'rgba(255, 255, 255, 0.05)',
+    border: '2px solid rgba(255, 255, 255, 0.2)',
+    borderRadius: '10px',
+    color: 'white',
+    textAlign: 'left',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease'
+  },
+  optionSelected: {
+    borderColor: '#3b82f6',
+    background: 'rgba(59, 130, 246, 0.15)',
+    transform: 'translateY(-2px)'
+  },
+  optionHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '8px'
+  },
+  optionLetter: {
+    width: '28px',
+    height: '28px',
+    background: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 'bold',
+    marginRight: '12px'
+  },
+  optionText: {
+    fontSize: '1.1rem',
+    fontWeight: '600',
+    flex: 1
+  },
+  optionSelectedIcon: {
+    color: '#3b82f6',
+    fontWeight: 'bold',
+    fontSize: '1.2rem'
+  },
+  optionDescription: {
+    fontSize: '0.9rem',
+    opacity: 0.8,
+    lineHeight: '1.4'
+  },
+  questionsReview: {
+    marginTop: '20px'
+  },
+  questionReviewItem: {
+    background: 'rgba(255, 255, 255, 0.05)',
+    padding: '20px',
+    borderRadius: '10px',
+    marginBottom: '15px',
+    borderLeft: '4px solid'
+  },
+  questionReviewHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: '10px'
+  },
+  questionText: {
+    marginBottom: '15px',
+    lineHeight: '1.4'
+  },
+  answerReview: {
+    marginBottom: '15px',
+    fontSize: '0.95rem'
+  },
+  questionExplanation: {
+    fontSize: '0.9rem',
+    opacity: 0.9,
+    lineHeight: '1.5',
     padding: '10px',
     background: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: '8px',
-    fontSize: '0.9rem'
-  },
-  physicsUnderstanding: {
-    marginBottom: '25px',
-    padding: '20px',
-    background: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: '10px'
-  },
-  conceptCheck: {
-    marginTop: '15px',
-    fontSize: '0.9rem',
-    lineHeight: '1.5'
-  },
-  improvementTips: {
-    marginBottom: '25px',
-    padding: '20px',
-    background: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: '10px'
-  },
-  tipsList: {
-    marginTop: '15px',
-    paddingLeft: '20px',
-    fontSize: '0.9rem',
-    lineHeight: '1.6'
+    borderRadius: '6px'
   },
   assessmentActions: {
     display: 'flex',
@@ -2105,18 +2603,108 @@ const styles = {
     fontWeight: 'bold',
     cursor: 'pointer',
     fontSize: '1rem'
+  },
+  previousButton: {
+    padding: '12px 24px',
+    border: '2px solid rgba(255, 255, 255, 0.3)',
+    borderRadius: '8px',
+    background: 'transparent',
+    color: 'white',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    fontSize: '1rem'
+  },
+  nextButton: {
+    padding: '12px 24px',
+    border: 'none',
+    borderRadius: '8px',
+    background: 'linear-gradient(45deg, #3b82f6, #8b5cf6)',
+    color: 'white',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    fontSize: '1rem'
+  },
+  submitButton: {
+    padding: '12px 24px',
+    border: 'none',
+    borderRadius: '8px',
+    background: 'linear-gradient(45deg, #22c55e, #16a34a)',
+    color: 'white',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    fontSize: '1rem'
+  },
+
+  // Blocking Overlay Styles
+  blockingOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0, 0, 0, 0.95)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1002,
+    padding: '20px'
+  },
+  blockingContent: {
+    background: 'linear-gradient(135deg, #1e3a8a 0%, #0c4a6e 100%)',
+    padding: '30px',
+    borderRadius: '15px',
+    textAlign: 'center',
+    maxWidth: '500px',
+    width: '100%',
+    border: '2px solid rgba(255, 255, 255, 0.3)'
+  },
+  blockingIcon: {
+    fontSize: '4rem',
+    marginBottom: '20px'
+  },
+  assessmentInfo: {
+    background: 'rgba(255, 255, 255, 0.1)',
+    padding: '15px',
+    borderRadius: '10px',
+    margin: '20px 0',
+    textAlign: 'left'
+  },
+  assessmentList: {
+    paddingLeft: '20px',
+    marginTop: '10px',
+    fontSize: '0.9rem',
+    lineHeight: '1.6'
+  },
+  startAssessmentButton: {
+    padding: '15px 30px',
+    border: 'none',
+    borderRadius: '10px',
+    background: 'linear-gradient(45deg, #22c55e, #16a34a)',
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: '1.1rem',
+    cursor: 'pointer',
+    margin: '10px 0',
+    width: '100%'
+  },
+  reviewPracticeButton: {
+    padding: '15px 30px',
+    border: '2px solid rgba(255, 255, 255, 0.3)',
+    borderRadius: '10px',
+    background: 'transparent',
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: '1.1rem',
+    cursor: 'pointer',
+    margin: '10px 0',
+    width: '100%'
+  },
+  note: {
+    fontSize: '0.8rem',
+    opacity: 0.8,
+    marginTop: '15px',
+    fontStyle: 'italic'
   }
 };
-
-// Add CSS animations
-const styleSheet = document.styleSheets[0];
-const keyframes = `
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.7; }
-  100% { opacity: 1; }
-}
-`;
-styleSheet.insertRule(keyframes, styleSheet.cssRules.length);
 
 export default RisingOrb;

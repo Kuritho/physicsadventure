@@ -9,63 +9,73 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
   const [currentTrialHeight, setCurrentTrialHeight] = useState(50);
   const [showReward, setShowReward] = useState(false);
   const [assessment, setAssessment] = useState({
-    heightCalculation: null,
-    errorReflection: '',
     submitted: false,
-    score: 0
+    score: 0,
+    answers: {
+      q1: '',
+      q2: '',
+      q3: ''
+    }
   });
   
-  // New assessment states
-  const [currentAssessment, setCurrentAssessment] = useState(0);
-  const [assessments, setAssessments] = useState([
+  // Assessment questions
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const questions = [
     {
-      type: 'heightCalculation',
-      completed: false,
-      score: 0
+      id: 1,
+      question: "What is the velocity of the ball just before it hits the ground?",
+      options: [
+        { id: 'q1a', text: "v = g × t", value: 'v=gt' },
+        { id: 'q1b', text: "v = g / t", value: 'v=g/t' },
+        { id: 'q1c', text: "v = ½ × g × t²", value: 'v=halfgt2' },
+        { id: 'q1d', text: "v = t / g", value: 'v=t/g' }
+      ],
+      correctAnswer: 'v=gt',
+      explanation: "The velocity of a freely falling object just before hitting the ground is v = g × t, where g is acceleration due to gravity (9.81 m/s²) and t is the fall time."
     },
     {
-      type: 'errorReflection',
-      completed: false,
-      score: 0
+      id: 2,
+      question: "How will you compare the actual height of the building from the result of the experiment?",
+      options: [
+        { id: 'q2a', text: "Compare measured time with expected time", value: 'compareTime' },
+        { id: 'q2b', text: "Use the formula h = ½gt² to calculate height from measured time", value: 'useFormula' },
+        { id: 'q2c', text: "Measure the height directly with a ruler", value: 'directMeasure' },
+        { id: 'q2d', text: "Guess based on the building's appearance", value: 'guess' }
+      ],
+      correctAnswer: 'useFormula',
+      explanation: "Using the free fall formula h = ½gt², we can calculate the height from the measured fall time. The calculated height can then be compared with the actual height."
     },
     {
-      type: 'graphInterpretation',
-      completed: false,
-      score: 0,
-      userAnswer: '',
-      correctAnswer: 'quadratic'
-    },
-    {
-      type: 'gravityCalculation',
-      completed: false,
-      score: 0,
-      userAnswer: '',
-      correctAnswer: null
-    },
-    {
-      type: 'realWorldApplication',
-      completed: false,
-      score: 0,
-      userAnswer: '',
-      correctAnswer: 'time'
-    },
-    {
-      type: 'experimentalDesign',
-      completed: false,
-      score: 0,
-      userAnswer: ''
+      id: 3,
+      question: "What is the percentage error in your experiment?",
+      options: [
+        { id: 'q3a', text: "[(Actual - Calculated) / Actual] × 100%", value: 'errorFormula1' },
+        { id: 'q3b', text: "[(Calculated - Actual) / Calculated] × 100%", value: 'errorFormula2' },
+        { id: 'q3c', text: "Actual - Calculated", value: 'difference' },
+        { id: 'q3d', text: "(Actual + Calculated) / 2", value: 'average' }
+      ],
+      correctAnswer: 'errorFormula1',
+      explanation: "Percentage error = |(Actual Height - Calculated Height)| / Actual Height × 100%. This tells us how accurate our experimental measurement is compared to the known value."
     }
-  ]);
+  ];
 
   const sphereRef = useRef(null);
+  const towerContainerRef = useRef(null);
   const animationRef = useRef(null);
   const startTimeRef = useRef(0);
   const isDroppingRef = useRef(false);
+  const [containerHeight, setContainerHeight] = useState(0);
 
   const GRAVITY = 9.81;
-  const PIXELS_PER_METER = 6; // Reduced for better visibility
-  const MAX_TOWER_HEIGHT = 100;
-  const SIMULATION_SCALE = 0.8; // Scale factor to zoom out
+  const MAX_TOWER_HEIGHT = 100; // meters
+  const GROUND_HEIGHT = 70; // pixels
+  const SPHERE_SIZE = 40; // pixels (sphere diameter)
+
+  // Calculate scale factor based on container height
+  const getScaleFactor = () => {
+    const availableHeight = containerHeight - GROUND_HEIGHT;
+    return availableHeight / MAX_TOWER_HEIGHT;
+  };
 
   const calculateTheoreticalTime = (h) => {
     return Math.sqrt((2 * h) / GRAVITY);
@@ -79,6 +89,42 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
     return (2 * h) / (t * t);
   };
 
+  // Get pixel position for a given height in meters
+  const getPixelPosition = (heightMeters) => {
+    const scale = getScaleFactor();
+    return heightMeters * scale;
+  };
+
+  useEffect(() => {
+    // Update container height on mount and resize
+    const updateContainerHeight = () => {
+      if (towerContainerRef.current) {
+        const height = towerContainerRef.current.clientHeight;
+        setContainerHeight(height);
+      }
+    };
+
+    updateContainerHeight();
+    window.addEventListener('resize', updateContainerHeight);
+
+    return () => {
+      window.removeEventListener('resize', updateContainerHeight);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // Reset sphere position when height changes
+    if (sphereRef.current) {
+      const scale = getScaleFactor();
+      const towerHeightPixels = getPixelPosition(currentTrialHeight);
+      sphereRef.current.style.transform = `translateX(-50%) translateY(-${SPHERE_SIZE/2}px)`;
+      sphereRef.current.style.bottom = `${GROUND_HEIGHT + towerHeightPixels}px`;
+    }
+  }, [currentTrialHeight, containerHeight]);
+
   const startDrop = () => {
     if (isDroppingRef.current) return;
     
@@ -89,19 +135,24 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
     startTimeRef.current = performance.now();
 
     const theoreticalTime = calculateTheoreticalTime(currentTrialHeight);
+    const scale = getScaleFactor();
+    const towerHeightPixels = getPixelPosition(currentTrialHeight);
 
     const animate = (currentTime) => {
       if (!isDroppingRef.current) return;
       
       const elapsed = (currentTime - startTimeRef.current) / 1000;
-      const currentHeight = 0.5 * GRAVITY * elapsed * elapsed;
+      const currentHeightMeters = 0.5 * GRAVITY * elapsed * elapsed;
       
-      if (currentHeight >= currentTrialHeight) {
+      // Stop when the sphere reaches or exceeds the ground
+      if (currentHeightMeters >= currentTrialHeight) {
         setTime(theoreticalTime);
         setHeight(currentTrialHeight);
         
         if (sphereRef.current) {
-          sphereRef.current.style.transform = `translateX(-50%) translateY(${currentTrialHeight * PIXELS_PER_METER}px) scale(${SIMULATION_SCALE})`;
+          // Position the sphere at ground level
+          sphereRef.current.style.bottom = `${GROUND_HEIGHT}px`;
+          sphereRef.current.style.transform = `translateX(-50%) translateY(${SPHERE_SIZE/2}px)`;
         }
         
         const experimentalHeight = calculateHeightFromTime(theoreticalTime);
@@ -112,7 +163,8 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
           towerHeight: currentTrialHeight,
           fallTime: theoreticalTime,
           calculatedHeight: experimentalHeight,
-          error: error
+          error: error,
+          finalVelocity: (GRAVITY * theoreticalTime).toFixed(1)
         };
         
         setTrials(prev => [...prev, newTrial]);
@@ -127,10 +179,13 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
       }
       
       setTime(elapsed);
-      setHeight(currentHeight);
+      setHeight(currentHeightMeters);
       
       if (sphereRef.current) {
-        sphereRef.current.style.transform = `translateX(-50%) translateY(${currentHeight * PIXELS_PER_METER}px) scale(${SIMULATION_SCALE})`;
+        // Update sphere position based on current height
+        const fallenPixels = currentHeightMeters * scale;
+        const currentBottom = GROUND_HEIGHT + towerHeightPixels - fallenPixels;
+        sphereRef.current.style.bottom = `${currentBottom}px`;
       }
       
       animationRef.current = requestAnimationFrame(animate);
@@ -159,7 +214,8 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
         towerHeight: currentTrialHeight,
         fallTime: time,
         calculatedHeight: experimentalHeight,
-        error: error
+        error: error,
+        finalVelocity: (GRAVITY * time).toFixed(1)
       };
       
       setTrials(prev => [...prev, newTrial]);
@@ -179,8 +235,11 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
     setHeight(0);
     
     if (sphereRef.current) {
-      sphereRef.current.style.transform = `translateX(-50%) translateY(0px) scale(${SIMULATION_SCALE})`;
-      sphereRef.current.style.bottom = `${((currentTrialHeight / MAX_TOWER_HEIGHT) * 60)}%`;
+      const scale = getScaleFactor();
+      const towerHeightPixels = getPixelPosition(currentTrialHeight);
+      // Reset sphere to top of pillar position
+      sphereRef.current.style.transform = `translateX(-50%) translateY(-${SPHERE_SIZE/2}px)`;
+      sphereRef.current.style.bottom = `${GROUND_HEIGHT + towerHeightPixels}px`;
     }
   };
 
@@ -190,306 +249,69 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
     resetExperiment();
   };
 
-  useEffect(() => {
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, []);
-
   const completeQuest = () => {
     if (trials.length >= 3) {
       if (!assessment.submitted) {
-        alert('Please complete all assessments before claiming your reward!');
+        alert('Please complete the assessment before claiming your reward!');
       } else if (assessment.score >= 70) {
         setShowReward(true);
         setTimeout(() => {
           onComplete();
         }, 3000);
       } else {
-        alert('Please review your assessments. You need a score of at least 70% to earn the Gravity Gauge!');
+        alert('Please review your assessment. You need a score of at least 70% to earn the Gravity Gauge!');
       }
     } else {
       alert('Please complete at least 3 trials to master free fall calculations!');
     }
   };
 
-  const handleAssessmentSubmit = () => {
-    if (currentAssessment < assessments.length - 1) {
-      setCurrentAssessment(prev => prev + 1);
-    } else {
-      calculateFinalScore();
-    }
-  };
-
-  const calculateFinalScore = () => {
-    let totalScore = 0;
-    let maxScore = 0;
-
-    assessments.forEach((assess, index) => {
-      let score = 0;
-      const maxPoints = 20;
-
-      switch (assess.type) {
-        case 'heightCalculation':
-          const lastTrial = trials[trials.length - 1];
-          const userAnswer = parseFloat(assessment.heightCalculation);
-          const correctAnswer = lastTrial.calculatedHeight;
-          const tolerance = correctAnswer * 0.1;
-          
-          if (Math.abs(userAnswer - correctAnswer) <= tolerance) {
-            score = maxPoints;
-          }
-          break;
-
-        case 'errorReflection':
-          const reflection = assessment.errorReflection.toLowerCase();
-          const keywords = ['error', 'accuracy', 'measurement', 'experimental', 'deviation', 'precision', 'gravity'];
-          const keywordCount = keywords.filter(keyword => reflection.includes(keyword)).length;
-          
-          if (assessment.errorReflection.length >= 50 && keywordCount >= 2) {
-            score = maxPoints;
-          } else if (assessment.errorReflection.length >= 30) {
-            score = maxPoints * 0.5;
-          }
-          break;
-
-        case 'graphInterpretation':
-          if (assess.userAnswer.toLowerCase().includes(assess.correctAnswer)) {
-            score = maxPoints;
-          }
-          break;
-
-        case 'gravityCalculation':
-          const calculatedG = calculateGravityFromData(trials[0].towerHeight, trials[0].fallTime);
-          const userG = parseFloat(assess.userAnswer);
-          if (userG && Math.abs(userG - calculatedG) <= 1.0) {
-            score = maxPoints;
-          }
-          break;
-
-        case 'realWorldApplication':
-          if (assess.userAnswer.toLowerCase().includes(assess.correctAnswer)) {
-            score = maxPoints;
-          }
-          break;
-
-        case 'experimentalDesign':
-          if (assess.userAnswer.length >= 40) {
-            score = maxPoints;
-          } else if (assess.userAnswer.length >= 20) {
-            score = maxPoints * 0.5;
-          }
-          break;
+  const handleAnswerSelect = (questionId, answer) => {
+    setAssessment(prev => ({
+      ...prev,
+      answers: {
+        ...prev.answers,
+        [questionId]: answer
       }
-
-      assessments[index].score = score;
-      totalScore += score;
-      maxScore += maxPoints;
-    });
-
-    const finalScore = Math.round((totalScore / maxScore) * 100);
-    setAssessment({...assessment, submitted: true, score: finalScore});
+    }));
   };
 
-  const handleAssessmentAnswer = (answer) => {
-    const updatedAssessments = [...assessments];
-    updatedAssessments[currentAssessment].userAnswer = answer;
-    setAssessments(updatedAssessments);
-  };
-
-  const renderCurrentAssessment = () => {
-    const current = assessments[currentAssessment];
+  const calculateAssessmentScore = () => {
+    let correctCount = 0;
     
-    switch (current.type) {
-      case 'heightCalculation':
-        return (
-          <div style={styles.assessmentCard}>
-            <h4 style={styles.assessmentTitle}>Question 1: Height Calculation (20 points)</h4>
-            <p style={styles.assessmentQuestion}>
-              Based on your last trial (Fall Time: {trials[trials.length - 1].fallTime.toFixed(2)}s), 
-              calculate the height using the formula h = ½gt²:
-            </p>
-            <input
-              type="number"
-              step="0.1"
-              placeholder="Enter calculated height in meters"
-              value={assessment.heightCalculation || ''}
-              onChange={(e) => setAssessment({...assessment, heightCalculation: e.target.value})}
-              disabled={assessment.submitted}
-              style={styles.assessmentInput}
-            />
-          </div>
-        );
+    questions.forEach((question, index) => {
+      const questionId = `q${index + 1}`;
+      if (assessment.answers[questionId] === question.correctAnswer) {
+        correctCount++;
+      }
+    });
+    
+    const score = Math.round((correctCount / questions.length) * 100);
+    setAssessment(prev => ({
+      ...prev,
+      submitted: true,
+      score: score
+    }));
+  };
 
-      case 'errorReflection':
-        return (
-          <div style={styles.assessmentCard}>
-            <h4 style={styles.assessmentTitle}>Question 2: Reflection on Experimental Error (20 points)</h4>
-            <p style={styles.assessmentQuestion}>
-              Your average experimental error is {(trials.reduce((sum, trial) => sum + trial.error, 0) / trials.length).toFixed(1)}%. 
-              Reflect on what factors might cause experimental errors in free fall measurements.
-            </p>
-            <textarea
-              placeholder="Discuss sources of error such as air resistance, measurement accuracy, reaction time, etc."
-              value={assessment.errorReflection}
-              onChange={(e) => setAssessment({...assessment, errorReflection: e.target.value})}
-              disabled={assessment.submitted}
-              style={styles.assessmentTextarea}
-              rows="4"
-            />
-          </div>
-        );
-
-      case 'graphInterpretation':
-        return (
-          <div style={styles.assessmentCard}>
-            <h4 style={styles.assessmentTitle}>Question 3: Graph Interpretation (20 points)</h4>
-            <p style={styles.assessmentQuestion}>
-              Based on your experimental data, what is the relationship between fall time and tower height?
-              How would a graph of height vs. time squared look?
-            </p>
-            <div style={styles.multipleChoice}>
-              <label style={styles.choiceLabel}>
-                <input
-                  type="radio"
-                  name="graphType"
-                  value="linear"
-                  onChange={(e) => handleAssessmentAnswer(e.target.value)}
-                  disabled={assessment.submitted}
-                />
-                Linear relationship
-              </label>
-              <label style={styles.choiceLabel}>
-                <input
-                  type="radio"
-                  name="graphType"
-                  value="quadratic"
-                  onChange={(e) => handleAssessmentAnswer(e.target.value)}
-                  disabled={assessment.submitted}
-                />
-                Quadratic relationship (time squared)
-              </label>
-              <label style={styles.choiceLabel}>
-                <input
-                  type="radio"
-                  name="graphType"
-                  value="exponential"
-                  onChange={(e) => handleAssessmentAnswer(e.target.value)}
-                  disabled={assessment.submitted}
-                />
-                Exponential relationship
-              </label>
-            </div>
-          </div>
-        );
-
-      case 'gravityCalculation':
-        const sampleTrial = trials[0];
-        return (
-          <div style={styles.assessmentCard}>
-            <h4 style={styles.assessmentTitle}>Question 4: Gravity Calculation (20 points)</h4>
-            <p style={styles.assessmentQuestion}>
-              Using your first trial data (Height: {sampleTrial.towerHeight}m, Time: {sampleTrial.fallTime.toFixed(2)}s),
-              calculate the experimental value of gravity using the formula: g = 2h/t²
-            </p>
-            <input
-              type="number"
-              step="0.01"
-              placeholder="Enter calculated gravity in m/s²"
-              value={current.userAnswer}
-              onChange={(e) => handleAssessmentAnswer(e.target.value)}
-              disabled={assessment.submitted}
-              style={styles.assessmentInput}
-            />
-            <p style={styles.hintText}>
-              Hint: Rearrange the free fall equation to solve for g
-            </p>
-          </div>
-        );
-
-      case 'realWorldApplication':
-        return (
-          <div style={styles.assessmentCard}>
-            <h4 style={styles.assessmentTitle}>Question 5: Real-World Application (20 points)</h4>
-            <p style={styles.assessmentQuestion}>
-              Imagine you're an engineer needing to measure the height of a cliff. You drop a rock and hear it hit 
-              the bottom after 3 seconds. What measurement is most critical for accurate height calculation?
-            </p>
-            <div style={styles.multipleChoice}>
-              <label style={styles.choiceLabel}>
-                <input
-                  type="radio"
-                  name="criticalMeasurement"
-                  value="mass"
-                  onChange={(e) => handleAssessmentAnswer(e.target.value)}
-                  disabled={assessment.submitted}
-                />
-                Mass of the rock
-              </label>
-              <label style={styles.choiceLabel}>
-                <input
-                  type="radio"
-                  name="criticalMeasurement"
-                  value="time"
-                  onChange={(e) => handleAssessmentAnswer(e.target.value)}
-                  disabled={assessment.submitted}
-                />
-                Accurate time measurement
-              </label>
-              <label style={styles.choiceLabel}>
-                <input
-                  type="radio"
-                  name="criticalMeasurement"
-                  value="air"
-                  onChange={(e) => handleAssessmentAnswer(e.target.value)}
-                  disabled={assessment.submitted}
-                />
-                Air temperature
-              </label>
-              <label style={styles.choiceLabel}>
-                <input
-                  type="radio"
-                  name="criticalMeasurement"
-                  value="shape"
-                  onChange={(e) => handleAssessmentAnswer(e.target.value)}
-                  disabled={assessment.submitted}
-                />
-                Shape of the rock
-              </label>
-            </div>
-          </div>
-        );
-
-      case 'experimentalDesign':
-        return (
-          <div style={styles.assessmentCard}>
-            <h4 style={styles.assessmentTitle}>Question 6: Experimental Design (20 points)</h4>
-            <p style={styles.assessmentQuestion}>
-              Propose an improvement to this experiment that would reduce experimental error. 
-              Consider measurement techniques, equipment, or procedural changes.
-            </p>
-            <textarea
-              placeholder="Describe your improved experimental design..."
-              value={current.userAnswer}
-              onChange={(e) => handleAssessmentAnswer(e.target.value)}
-              disabled={assessment.submitted}
-              style={styles.assessmentTextarea}
-              rows="4"
-            />
-            <p style={styles.hintText}>
-              Consider: electronic timing, multiple trials, error analysis, or accounting for air resistance
-            </p>
-          </div>
-        );
-
-      default:
-        return null;
+  const handleAssessmentSubmit = () => {
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(prev => prev + 1);
+    } else {
+      calculateAssessmentScore();
     }
   };
 
   const theoreticalTime = calculateTheoreticalTime(currentTrialHeight);
+  const scale = containerHeight > 0 ? getScaleFactor() : 1;
+  const towerHeightPixels = getPixelPosition(currentTrialHeight);
+  const towerHeightPercentage = (towerHeightPixels / (containerHeight - GROUND_HEIGHT)) * 100;
+
+  // Calculate sphere position
+  const sphereBottom = GROUND_HEIGHT + towerHeightPixels;
+
+  // Get last trial data for assessment context
+  const lastTrial = trials.length > 0 ? trials[trials.length - 1] : null;
 
   return (
     <div style={styles.container}>
@@ -592,13 +414,28 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
           </div>
         </div>
 
-        <div style={styles.simulationArea}>
+        <div 
+          ref={towerContainerRef}
+          style={styles.simulationArea}
+        >
           <div style={styles.towerContainer}>
-            <div style={{...styles.tower, height: `${(currentTrialHeight / MAX_TOWER_HEIGHT) * 60}%`}}>
+            {/* Ground */}
+            <div style={styles.ground}></div>
+            
+            {/* Pillar positioned on the ground */}
+            <div style={{
+              ...styles.tower,
+              height: `${towerHeightPercentage}%`,
+              bottom: '70px',
+              transform: 'translateX(-50%)',
+            }}>
               <div style={styles.towerStructure}>
                 <div style={styles.towerWindows}>
                   {[...Array(Math.floor(currentTrialHeight / 5))].map((_, i) => (
-                    <div key={i} style={{...styles.window, bottom: `${(i * 5 / currentTrialHeight) * 100}%`}}></div>
+                    <div key={i} style={{
+                      ...styles.window,
+                      bottom: `${(i * 5 / currentTrialHeight) * 100}%`
+                    }}></div>
                   ))}
                 </div>
               </div>
@@ -606,34 +443,47 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
                 <div style={styles.observationDeck}></div>
               </div>
               
+              {/* Height indicator at the top of the pillar */}
               <div 
                 style={{
                   ...styles.currentHeightIndicator,
-                  bottom: `${(currentTrialHeight / MAX_TOWER_HEIGHT) * 60}%`
+                  top: '0%',
+                  transform: 'translateY(-50%)'
                 }}
               >
                 <div style={styles.indicatorLine}></div>
-                <span style={styles.indicatorLabel}>← Start: {currentTrialHeight}m</span>
+                <span style={styles.indicatorLabel}>← Height: {currentTrialHeight}m</span>
               </div>
             </div>
             
+            {/* Falling sphere - positioned at the top of the pillar */}
             <div 
               ref={sphereRef}
               style={{
                 ...styles.fallingSphere,
-                bottom: `${((currentTrialHeight / MAX_TOWER_HEIGHT) * 60)}%`,
-                transform: `translateX(-50%) translateY(0px) scale(${SIMULATION_SCALE})`
+                bottom: `${sphereBottom}px`,
+                left: '50%',
+                transform: `translateX(-50%) translateY(-${SPHERE_SIZE/2}px)`
               }}
             >
               <div style={styles.sphereInner}>⚪</div>
             </div>
 
-            <div style={styles.ground}></div>
+            {/* Grid lines for reference */}
+            <div style={styles.referenceLines}>
+              <div style={styles.referenceLine}></div>
+              <div style={{...styles.referenceLine, bottom: '25%'}}></div>
+              <div style={{...styles.referenceLine, bottom: '50%'}}></div>
+              <div style={{...styles.referenceLine, bottom: '75%'}}></div>
+            </div>
           </div>
 
           <div style={styles.physicsOverlay}>
             <div style={styles.formula}>h = ½·g·t²</div>
             <div style={styles.formula}>v = g·t</div>
+            <div style={styles.scaleInfo}>
+              Scale: 1m = {(scale * 100).toFixed(1)}px
+            </div>
           </div>
         </div>
       </div>
@@ -650,6 +500,7 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
                     <th style={styles.th}>Actual Height</th>
                     <th style={styles.th}>Fall Time</th>
                     <th style={styles.th}>Calculated Height</th>
+                    <th style={styles.th}>Final Velocity</th>
                     <th style={styles.th}>Error</th>
                   </tr>
                 </thead>
@@ -660,6 +511,7 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
                       <td style={styles.td}>{trial.towerHeight}m</td>
                       <td style={styles.td}>{trial.fallTime.toFixed(2)}s</td>
                       <td style={styles.td}>{trial.calculatedHeight.toFixed(1)}m</td>
+                      <td style={styles.td}>{trial.finalVelocity} m/s</td>
                       <td style={{...styles.td, color: trial.error > 5 ? '#ef4444' : '#22c55e', fontWeight: '600'}}>
                         {trial.error.toFixed(1)}%
                       </td>
@@ -726,40 +578,109 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
 
         {trials.length >= 3 && (
           <div style={styles.assessmentSection}>
-            <h3 style={styles.sectionTitle}>📝 Comprehensive Assessment & Evaluation</h3>
+            <h3 style={styles.sectionTitle}>📝 Physics Assessment</h3>
             <p style={{marginBottom: '20px', fontSize: '14px'}}>
-              Complete all 6 assessments to earn your Gravity Gauge! 
-              Progress: {currentAssessment + 1}/6 ({Math.round(((currentAssessment + 1) / 6) * 100)}%)
+              Complete all 3 questions to earn your Gravity Gauge! 
+              Progress: {currentQuestion + 1}/3 ({Math.round(((currentQuestion + 1) / 3) * 100)}%)
             </p>
             
             <div style={styles.progressBar}>
               <div 
                 style={{
                   ...styles.progressFill,
-                  width: `${((currentAssessment + 1) / 6) * 100}%`
+                  width: `${((currentQuestion + 1) / 3) * 100}%`
                 }}
               ></div>
             </div>
 
-            {renderCurrentAssessment()}
+            <div style={styles.assessmentCard}>
+              <h4 style={styles.assessmentTitle}>
+                Question {currentQuestion + 1}: {questions[currentQuestion].question}
+              </h4>
+              
+              {lastTrial && currentQuestion === 0 && (
+                <div style={styles.experimentContext}>
+                  <p style={styles.contextText}>
+                    <strong>Experiment Data:</strong> For a {lastTrial.towerHeight}m tower, 
+                    the sphere fell for {lastTrial.fallTime.toFixed(2)}s, 
+                    reaching a final velocity of {lastTrial.finalVelocity} m/s.
+                  </p>
+                </div>
+              )}
+              
+              {lastTrial && currentQuestion === 1 && (
+                <div style={styles.experimentContext}>
+                  <p style={styles.contextText}>
+                    <strong>Experiment Data:</strong> Your last trial calculated the height as {lastTrial.calculatedHeight.toFixed(1)}m 
+                    compared to the actual height of {lastTrial.towerHeight}m.
+                  </p>
+                </div>
+              )}
+              
+              {lastTrial && currentQuestion === 2 && (
+                <div style={styles.experimentContext}>
+                  <p style={styles.contextText}>
+                    <strong>Experiment Data:</strong> Your last trial had an error of {lastTrial.error.toFixed(1)}%.
+                  </p>
+                </div>
+              )}
+
+              <div style={styles.multipleChoice}>
+                {questions[currentQuestion].options.map((option) => (
+                  <label 
+                    key={option.id}
+                    style={{
+                      ...styles.choiceLabel,
+                      ...(assessment.answers[`q${currentQuestion + 1}`] === option.value ? styles.choiceSelected : {})
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name={`question-${currentQuestion + 1}`}
+                      value={option.value}
+                      checked={assessment.answers[`q${currentQuestion + 1}`] === option.value}
+                      onChange={() => handleAnswerSelect(`q${currentQuestion + 1}`, option.value)}
+                      disabled={assessment.submitted}
+                      style={styles.radioInput}
+                    />
+                    <span style={styles.choiceText}>{option.text}</span>
+                  </label>
+                ))}
+              </div>
+
+              {assessment.submitted && (
+                <div style={{
+                  ...styles.feedback,
+                  backgroundColor: assessment.answers[`q${currentQuestion + 1}`] === questions[currentQuestion].correctAnswer 
+                    ? 'rgba(34, 197, 94, 0.2)' 
+                    : 'rgba(239, 68, 68, 0.2)',
+                  borderColor: assessment.answers[`q${currentQuestion + 1}`] === questions[currentQuestion].correctAnswer 
+                    ? '#22c55e' 
+                    : '#ef4444'
+                }}>
+                  <h5 style={styles.feedbackTitle}>
+                    {assessment.answers[`q${currentQuestion + 1}`] === questions[currentQuestion].correctAnswer 
+                      ? '✅ Correct!' 
+                      : '❌ Incorrect'}
+                  </h5>
+                  <p style={styles.feedbackText}>{questions[currentQuestion].explanation}</p>
+                </div>
+              )}
+            </div>
 
             {!assessment.submitted ? (
               <div style={styles.assessmentNavigation}>
                 <button 
                   onClick={handleAssessmentSubmit}
                   style={{...styles.button, ...styles.submitButton}}
-                  disabled={
-                    (currentAssessment === 0 && !assessment.heightCalculation) ||
-                    (currentAssessment === 1 && !assessment.errorReflection.trim()) ||
-                    (currentAssessment >= 2 && !assessments[currentAssessment].userAnswer.trim())
-                  }
+                  disabled={!assessment.answers[`q${currentQuestion + 1}`]}
                 >
-                  {currentAssessment < assessments.length - 1 ? '➡️ Next Question' : '📤 Submit All Assessments'}
+                  {currentQuestion < questions.length - 1 ? '➡️ Next Question' : '📤 Submit Assessment'}
                 </button>
                 
-                {currentAssessment > 0 && (
+                {currentQuestion > 0 && (
                   <button 
-                    onClick={() => setCurrentAssessment(prev => prev - 1)}
+                    onClick={() => setCurrentQuestion(prev => prev - 1)}
                     style={{...styles.button, ...styles.backButton}}
                   >
                     ⬅️ Previous Question
@@ -768,42 +689,53 @@ const TowerOfGravity = ({ onComplete, navigate }) => {
               </div>
             ) : (
               <div style={styles.scoreCard}>
-                <h4 style={styles.scoreTitle}>Comprehensive Assessment Results</h4>
+                <h4 style={styles.scoreTitle}>Assessment Results</h4>
                 <div style={styles.scoreDisplay}>
-                  <span style={styles.scoreLabel}>Overall Score:</span>
+                  <span style={styles.scoreLabel}>Your Score:</span>
                   <span style={{...styles.scoreValue, color: assessment.score >= 70 ? '#22c55e' : '#ef4444'}}>
                     {assessment.score}%
                   </span>
                 </div>
                 
                 <div style={styles.detailedScores}>
-                  <h5 style={styles.detailedTitle}>Breakdown by Question:</h5>
-                  {assessments.map((assess, index) => (
-                    <div key={index} style={styles.scoreItem}>
-                      <span style={styles.scoreQuestion}>Q{index + 1}:</span>
-                      <span style={{...styles.scorePoints, color: assess.score >= 10 ? '#22c55e' : '#ef4444'}}>
-                        {assess.score}/20
-                      </span>
-                    </div>
-                  ))}
+                  <h5 style={styles.detailedTitle}>Question Results:</h5>
+                  {questions.map((question, index) => {
+                    const questionId = `q${index + 1}`;
+                    const isCorrect = assessment.answers[questionId] === question.correctAnswer;
+                    return (
+                      <div key={index} style={styles.scoreItem}>
+                        <span style={styles.scoreQuestion}>Q{index + 1}:</span>
+                        <span style={{
+                          ...styles.scorePoints, 
+                          color: isCorrect ? '#22c55e' : '#ef4444',
+                          fontWeight: 'bold'
+                        }}>
+                          {isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <p style={styles.scoreMessage}>
                   {assessment.score >= 70 
-                    ? '🎉 Excellent work! You have demonstrated comprehensive understanding of free fall physics!' 
-                    : '📚 Keep learning! Review the concepts and consider retaking the assessments.'}
+                    ? '🎉 Excellent work! You have demonstrated understanding of free fall physics!' 
+                    : '📚 Keep learning! Review the concepts and consider retaking the assessment.'}
                 </p>
                 
                 {assessment.score < 70 && (
                   <button 
                     onClick={() => {
-                      setAssessment({heightCalculation: null, errorReflection: '', submitted: false, score: 0});
-                      setCurrentAssessment(0);
-                      setAssessments(assessments.map(a => ({...a, userAnswer: '', score: 0})));
+                      setAssessment({
+                        submitted: false,
+                        score: 0,
+                        answers: { q1: '', q2: '', q3: '' }
+                      });
+                      setCurrentQuestion(0);
                     }}
                     style={{...styles.button, ...styles.retryButton}}
                   >
-                    🔄 Retry All Assessments
+                    🔄 Retry Assessment
                   </button>
                 )}
               </div>
@@ -885,7 +817,7 @@ const styles = {
   },
   experimentArea: {
     display: 'flex',
-    flexDirection: 'column-reverse',
+    flexDirection: 'column',
     gap: '20px',
     marginBottom: '20px',
   },
@@ -907,8 +839,12 @@ const styles = {
   },
   slider: {
     width: '100%',
-    height: '40px',
+    height: '8px',
     marginBottom: '12px',
+    WebkitAppearance: 'none',
+    background: 'linear-gradient(90deg, #60a5fa, #a855f7)',
+    borderRadius: '4px',
+    outline: 'none',
   },
   heightPresets: {
     display: 'flex',
@@ -935,10 +871,12 @@ const styles = {
   physicsTitle: {
     marginBottom: '12px',
     color: '#60a5fa',
+    fontSize: '16px',
   },
   sectionTitle: {
     marginBottom: '16px',
     color: 'white',
+    fontSize: '18px',
   },
   theoryItem: {
     display: 'flex',
@@ -1015,30 +953,23 @@ const styles = {
     borderRadius: '12px',
     overflow: 'hidden',
     border: '1px solid rgba(255, 255, 255, 0.1)',
-    margin: '0 auto',
     width: '100%',
     height: '500px',
-    minHeight: '500px',
+    minHeight: '400px',
     touchAction: 'none',
   },
   towerContainer: {
     position: 'relative',
     width: '100%',
     height: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-    transform: 'scale(0.8)',
-    transformOrigin: 'center',
   },
   tower: {
     position: 'absolute',
-    bottom: '0',
-    width: '90px',
+    width: '80px',
     background: 'linear-gradient(90deg, #4b5563, #6b7280)',
     borderRadius: '8px 8px 0 0',
     zIndex: 2,
     left: '50%',
-    transform: 'translateX(-50%)',
     transition: 'height 0.3s ease',
   },
   towerStructure: {
@@ -1048,14 +979,12 @@ const styles = {
   },
   towerWindows: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    width: '100%',
+    height: '100%',
   },
   window: {
     position: 'absolute',
-    width: '18px',
+    width: '20px',
     height: '25px',
     background: '#60a5fa',
     borderRadius: '4px',
@@ -1065,30 +994,29 @@ const styles = {
   },
   towerTop: {
     position: 'absolute',
-    top: '-30px',
+    top: '-20px',
     left: '-10px',
-    width: '110px',
-    height: '30px',
+    width: '100px',
+    height: '20px',
     background: '#374151',
     borderRadius: '8px 8px 0 0',
   },
   observationDeck: {
     position: 'absolute',
-    top: '8px',
+    top: '5px',
     left: '10px',
     right: '10px',
-    height: '18px',
+    height: '10px',
     background: '#60a5fa',
     borderRadius: '4px',
   },
   currentHeightIndicator: {
     position: 'absolute',
-    right: '-70px',
-    transform: 'translateY(50%)',
+    right: '-80px',
     zIndex: 5,
   },
   indicatorLine: {
-    width: '60px',
+    width: '70px',
     height: '2px',
     background: '#f59e0b',
     position: 'relative',
@@ -1097,7 +1025,7 @@ const styles = {
     position: 'absolute',
     top: '-25px',
     left: '0',
-    fontSize: '11px',
+    fontSize: '12px',
     color: '#f59e0b',
     fontWeight: 'bold',
     background: 'rgba(0, 0, 0, 0.6)',
@@ -1106,15 +1034,15 @@ const styles = {
   },
   fallingSphere: {
     position: 'absolute',
-    left: '50%',
     fontSize: '2.5rem',
     zIndex: 10,
-    transition: 'transform 0.1s linear',
-    willChange: 'transform',
+    transition: 'bottom 0.05s linear',
+    willChange: 'bottom',
   },
   sphereInner: {
     display: 'inline-block',
     filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6))',
+    animation: 'pulse 2s infinite',
   },
   ground: {
     position: 'absolute',
@@ -1124,6 +1052,21 @@ const styles = {
     height: '70px',
     background: 'linear-gradient(to top, #374151, #4b5563)',
     zIndex: 1,
+  },
+  referenceLines: {
+    position: 'absolute',
+    top: '0',
+    left: '0',
+    right: '0',
+    bottom: '70px',
+    zIndex: 0,
+  },
+  referenceLine: {
+    position: 'absolute',
+    left: '0',
+    right: '0',
+    height: '1px',
+    background: 'rgba(255, 255, 255, 0.1)',
   },
   physicsOverlay: {
     position: 'absolute',
@@ -1140,6 +1083,12 @@ const styles = {
     color: '#f59e0b',
     marginBottom: '6px',
     fontFamily: "'Courier New', monospace",
+  },
+  scaleInfo: {
+    fontSize: '12px',
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontStyle: 'italic',
+    marginTop: '8px',
   },
   dataSection: {
     background: 'rgba(255, 255, 255, 0.1)',
@@ -1242,54 +1191,63 @@ const styles = {
     marginBottom: '12px',
     fontSize: '16px',
   },
-  assessmentQuestion: {
+  experimentContext: {
+    background: 'rgba(96, 165, 250, 0.1)',
+    padding: '12px',
+    borderRadius: '8px',
     marginBottom: '15px',
-    fontSize: '14px',
-    lineHeight: '1.5',
+    borderLeft: '3px solid #60a5fa',
   },
-  assessmentInput: {
-    width: '100%',
-    padding: '12px',
-    borderRadius: '8px',
-    border: '1px solid rgba(255, 255, 255, 0.3)',
-    background: 'rgba(255, 255, 255, 0.1)',
-    color: 'white',
-    fontSize: '16px',
-    marginBottom: '10px',
-  },
-  assessmentTextarea: {
-    width: '100%',
-    padding: '12px',
-    borderRadius: '8px',
-    border: '1px solid rgba(255, 255, 255, 0.3)',
-    background: 'rgba(255, 255, 255, 0.1)',
-    color: 'white',
+  contextText: {
     fontSize: '14px',
-    fontFamily: 'inherit',
-    resize: 'vertical',
-    marginBottom: '10px',
+    margin: 0,
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   multipleChoice: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px',
+    gap: '10px',
     marginTop: '15px',
   },
   choiceLabel: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    padding: '12px',
+    gap: '12px',
+    padding: '14px',
     background: 'rgba(255, 255, 255, 0.1)',
     borderRadius: '8px',
     cursor: 'pointer',
-    transition: 'background 0.3s ease',
+    transition: 'all 0.3s ease',
+    border: '2px solid transparent',
   },
-  hintText: {
-    fontSize: '12px',
-    color: 'rgba(255, 255, 255, 0.6)',
-    marginTop: '8px',
-    fontStyle: 'italic',
+  choiceSelected: {
+    background: 'rgba(139, 92, 246, 0.2)',
+    borderColor: '#8b5cf6',
+  },
+  radioInput: {
+    width: '18px',
+    height: '18px',
+    cursor: 'pointer',
+  },
+  choiceText: {
+    fontSize: '15px',
+    flex: 1,
+  },
+  feedback: {
+    marginTop: '20px',
+    padding: '15px',
+    borderRadius: '8px',
+    borderLeft: '4px solid',
+  },
+  feedbackTitle: {
+    marginBottom: '8px',
+    fontSize: '16px',
+    fontWeight: 'bold',
+  },
+  feedbackText: {
+    fontSize: '14px',
+    lineHeight: '1.5',
+    margin: 0,
   },
   progressBar: {
     width: '100%',
@@ -1367,7 +1325,6 @@ const styles = {
   },
   scorePoints: {
     fontSize: '14px',
-    fontWeight: 'bold',
   },
   scoreMessage: {
     fontSize: '14px',
