@@ -21,7 +21,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
   const [assessmentBlocked, setAssessmentBlocked] = useState(false);
   const [questCompleted, setQuestCompleted] = useState(false);
 
-
   const ASSESSMENT_QUESTIONS = [
     {
       id: 1,
@@ -87,16 +86,13 @@ const RisingOrb = ({ onComplete, navigate }) => {
     }
   ];
 
-
   const GRAVITY = 9.81;
   const PIXELS_PER_METER = 5;
   const SUCCESS_THRESHOLD = 0.5;
   const PLATFORM_TOLERANCE = 0.5;
 
-  
   const platformHeights = [20, 25, 30, 35, 40, 45];
 
- 
   const velocityOptions = [
     { value: 15, label: '15 m/s', description: 'Very Low', icon: '🐌' },
     { value: 20, label: '20 m/s', description: 'Low', icon: '🚶' },
@@ -110,14 +106,11 @@ const RisingOrb = ({ onComplete, navigate }) => {
   const startTimeRef = useRef(0);
   const isMobile = window.innerWidth <= 768;
 
-  
   useEffect(() => {
     generateRandomHeight();
   }, []);
 
-  
   useEffect(() => {
-    
     if (!document.getElementById('orb-animations')) {
       const style = document.createElement('style');
       style.id = 'orb-animations';
@@ -140,7 +133,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
     }
   }, []);
 
-  
   useEffect(() => {
     if (assessmentBlocked && !assessmentCompleted) {
       const notification = document.createElement('div');
@@ -178,7 +170,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
     }
   }, [assessmentBlocked, assessmentCompleted]);
 
- 
   const generatePerfectHeight = () => {
     const perfectHeights = velocityOptions.map(option => {
       const velocity = option.value;
@@ -186,16 +177,12 @@ const RisingOrb = ({ onComplete, navigate }) => {
       return Math.round(height);
     });
     
-   
     const uniqueHeights = [...new Set(perfectHeights)].sort((a, b) => a - b);
-    
- 
     const randomIndex = Math.floor(Math.random() * uniqueHeights.length);
     return uniqueHeights[randomIndex];
   };
 
   const generateRandomHeight = () => {
- 
     const usePerfectHeight = Math.random() < 0.7;
     
     if (usePerfectHeight) {
@@ -209,11 +196,8 @@ const RisingOrb = ({ onComplete, navigate }) => {
     resetLaunch();
   };
 
-
   const calculateRequiredVelocity = (height) => {
     const exactVelocity = Math.sqrt(2 * GRAVITY * height);
-    
-
     const availableVelocities = velocityOptions.map(v => v.value);
     const closestVelocity = availableVelocities.reduce((prev, curr) => {
       return Math.abs(curr - exactVelocity) < Math.abs(prev - exactVelocity) ? curr : prev;
@@ -226,17 +210,14 @@ const RisingOrb = ({ onComplete, navigate }) => {
     };
   };
 
-  
   const calculateMaxHeight = (velocity) => {
     return (velocity * velocity) / (2 * GRAVITY);
   };
 
- 
   const calculateAirtimeFromVelocity = (velocity) => {
     return (2 * velocity) / GRAVITY;
   };
 
- 
   const calculateVelocityAtHeight = (initialVelocity, height) => {
     const maxHeight = (initialVelocity * initialVelocity) / (2 * GRAVITY);
     if (height > maxHeight) {
@@ -245,7 +226,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
     return Math.sqrt(Math.abs(initialVelocity * initialVelocity - 2 * GRAVITY * height));
   };
 
-  
   const calculatePerformanceScore = () => {
     if (trials.length === 0) return 0;
     
@@ -260,7 +240,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
     return Math.round(successScore + accuracyScore);
   };
 
- 
   const getPerformanceFeedback = (score) => {
     if (score >= 90) return { 
       level: "Expert", 
@@ -288,7 +267,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
       feedback: "Keep trying! Focus on understanding how different velocities affect the maximum height."
     };
   };
-
 
   const handleSelectOption = (questionId, optionId) => {
     setSelectedOptions(prev => ({
@@ -325,7 +303,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
     setAssessmentScore(score);
     setAssessmentCompleted(true);
   };
-
 
   const AssessmentPanel = () => {
     const currentQuestionData = ASSESSMENT_QUESTIONS[currentQuestion];
@@ -412,7 +389,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
                   setAssessmentCompleted(true);
                   setCurrentQuestion(0);
                   setSelectedOptions({});
-                  setAssessmentBlocked(false); 
+                  setAssessmentBlocked(false);
                 }}
               >
                 Return to Simulator
@@ -513,7 +490,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
     );
   };
 
-
   const AssessmentBlockingOverlay = () => {
     return (
       <div style={styles.blockingOverlay}>
@@ -565,14 +541,12 @@ const RisingOrb = ({ onComplete, navigate }) => {
     setShowResults(false);
     setLandingVelocity(0);
     
-    r
     startTimeRef.current = Date.now();
     timerRef.current = setInterval(() => {
       const currentTime = ((Date.now() - startTimeRef.current) / 1000).toFixed(1);
       setAirTime(currentTime);
     }, 100);
 
-   
     animateOrb();
   };
 
@@ -677,7 +651,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
     
     setTrials(prev => [...prev, newTrial]);
     setShowResults(true);
-    
 
     setAssessmentScore(calculatePerformanceScore());
     
@@ -688,7 +661,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
       }, 2000);
     }
 
- 
     if (trials.length >= 3 && !assessmentBlocked && !assessmentCompleted) {
       setTimeout(() => {
         setShowAssessment(true);
@@ -718,14 +690,12 @@ const RisingOrb = ({ onComplete, navigate }) => {
   };
 
   const completeQuest = () => {
-  
     if (assessmentBlocked && !assessmentCompleted) {
       alert("You must complete the assessment to proceed! Your assessment will start now.");
       setShowAssessment(true);
       setShowReward(false);
       return;
     }
-    
     
     setQuestCompleted(true);
     setShowReward(false);
@@ -759,7 +729,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
   const successfulTrials = trials.filter(t => t.success).length;
   const currentMaxHeight = calculateMaxHeight(selectedVelocity);
 
- 
   const perfectVelocityDisplay = () => {
     if (isPerfectVelocity) {
       return `${requiredVelocity.toFixed(1)} m/s (Available: ${closestVelocity} m/s)`;
@@ -767,9 +736,1183 @@ const RisingOrb = ({ onComplete, navigate }) => {
     return `${requiredVelocity.toFixed(1)} m/s (Closest: ${closestVelocity} m/s)`;
   };
 
+  // FIXED: Moved styles to a separate function
+  const getStyles = () => ({
+    container: (isMobile) => ({
+      padding: isMobile ? '10px' : '20px',
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #0c4a6e 0%, #1e40af 50%, #1e1b4b 100%)',
+      color: 'white',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      paddingBottom: isMobile ? '80px' : '20px'
+    }),
+    header: {
+      textAlign: 'center',
+      marginBottom: '20px'
+    },
+    headerTopRow: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '15px'
+    },
+    backButton: {
+      background: 'rgba(255, 255, 255, 0.1)',
+      border: '1px solid rgba(255, 255, 255, 0.3)',
+      color: 'white',
+      padding: '10px 15px',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      fontSize: '14px'
+    },
+    assessmentButton: {
+      background: 'linear-gradient(45deg, #ef4444, #dc2626)',
+      border: 'none',
+      color: 'white',
+      padding: '10px 15px',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      fontSize: '14px',
+      fontWeight: '600'
+    },
+    title: {
+      fontSize: '2rem',
+      margin: '0 0 8px 0',
+      background: 'linear-gradient(45deg, #60a5fa, #a855f7)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent'
+    },
+    subtitle: {
+      fontSize: '1rem',
+      opacity: 0.9,
+      margin: '0 0 12px 0'
+    },
+    questInfo: {
+      background: 'rgba(245, 158, 11, 0.2)',
+      padding: '6px 12px',
+      borderRadius: '15px',
+      display: 'inline-block',
+      fontSize: '0.8rem',
+      border: '1px solid rgba(245, 158, 11, 0.5)'
+    },
+    trialCount: {
+      fontSize: '0.8rem',
+      opacity: 0.8,
+      marginLeft: '8px'
+    },
+    missionBriefing: {
+      background: 'rgba(255, 255, 255, 0.1)',
+      padding: '15px',
+      borderRadius: '10px',
+      marginBottom: '20px',
+      textAlign: 'center',
+      border: '2px solid rgba(96, 165, 250, 0.3)'
+    },
+    assessmentWarning: {
+      background: 'rgba(239, 68, 68, 0.2)',
+      color: '#ef4444',
+      padding: '8px 12px',
+      borderRadius: '8px',
+      marginTop: '10px',
+      border: '1px solid rgba(239, 68, 68, 0.5)',
+      fontWeight: '600'
+    },
+    platformInfo: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: '15px',
+      marginTop: '10px',
+      flexWrap: 'wrap'
+    },
+    newPlatformButton: {
+      background: 'rgba(168, 85, 247, 0.3)',
+      border: '1px solid #a855f7',
+      color: 'white',
+      padding: '8px 12px',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      fontSize: '0.8rem',
+      fontWeight: '600'
+    },
+    newPlatformButtonMobile: {
+      background: 'rgba(168, 85, 247, 0.3)',
+      border: '1px solid #a855f7',
+      color: 'white',
+      padding: '12px 8px',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      fontSize: '0.8rem',
+      fontWeight: '600',
+      flex: 1
+    },
+    platformActive: {
+      boxShadow: '0 0 40px rgba(34, 197, 94, 0.8)',
+      border: '3px solid #22c55e',
+      animation: 'pulse 1.5s ease-in-out infinite'
+    },
+    platformHighlight: {
+      boxShadow: '0 0 25px rgba(34, 197, 94, 0.6)',
+      border: '2px solid #22c55e'
+    },
+    orbOnPlatform: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      zIndex: 15
+    },
+    platformOrbGlow: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: '50px',
+      height: '50px',
+      background: 'radial-gradient(circle, rgba(34, 197, 94, 0.6) 0%, transparent 70%)',
+      borderRadius: '50%',
+      animation: 'pulse 2s ease-in-out infinite'
+    },
+    platformOrb: {
+      position: 'relative',
+      fontSize: '1.8rem',
+      filter: 'drop-shadow(0 0 15px rgba(34, 197, 94, 0.8))',
+      zIndex: 16
+    },
+    landingVelocity: {
+      position: 'absolute',
+      top: '-25px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      background: 'rgba(0, 0, 0, 0.8)',
+      color: '#22c55e',
+      padding: '3px 8px',
+      borderRadius: '10px',
+      fontSize: '0.7rem',
+      fontWeight: '600',
+      whiteSpace: 'nowrap'
+    },
+    landingInfo: {
+      background: 'rgba(34, 197, 94, 0.2)',
+      padding: '12px',
+      borderRadius: '8px',
+      margin: '10px 0',
+      borderLeft: '4px solid #22c55e'
+    },
+    platformControl: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      margin: '10px 0',
+      padding: '10px',
+      background: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: '8px'
+    },
+    platformHeightBadge: {
+      background: 'rgba(168, 85, 247, 0.3)',
+      padding: '2px 6px',
+      borderRadius: '4px',
+      fontSize: '0.7rem',
+      fontWeight: '600'
+    },
+    landedBadge: {
+      background: 'rgba(34, 197, 94, 0.3)',
+      color: '#22c55e',
+      padding: '3px 8px',
+      borderRadius: '4px',
+      fontSize: '0.7rem',
+      fontWeight: '600',
+      marginTop: '5px',
+      textAlign: 'center'
+    },
+    content: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: '20px',
+      maxWidth: '1200px',
+      margin: '0 auto',
+      alignItems: 'start'
+    },
+    simulationArea: {
+      position: 'relative',
+      height: '500px',
+      background: 'linear-gradient(180deg, #1e40af 0%, #0c4a6e 100%)',
+      borderRadius: '12px',
+      border: '2px solid rgba(255, 255, 255, 0.1)',
+      overflow: 'hidden'
+    },
+    mobileContent: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '15px'
+    },
+    simulationAreaMobile: {
+      position: 'relative',
+      height: '400px',
+      background: 'linear-gradient(180deg, #1e40af 0%, #0c4a6e 100%)',
+      borderRadius: '12px',
+      border: '2px solid rgba(255, 255, 255, 0.1)',
+      overflow: 'hidden'
+    },
+    missionInfo: {
+      background: 'rgba(96, 165, 250, 0.2)',
+      padding: '15px',
+      borderRadius: '10px',
+      marginBottom: '20px',
+      border: '2px solid rgba(96, 165, 250, 0.4)',
+      textAlign: 'center'
+    },
+    missionTitle: {
+      margin: '0 0 10px 0',
+      color: '#60a5fa'
+    },
+    missionText: {
+      margin: '0 0 10px 0',
+      fontSize: '0.9rem',
+      lineHeight: '1.4'
+    },
+    perfectVelocity: {
+      background: 'rgba(34, 197, 94, 0.2)',
+      padding: '8px 12px',
+      borderRadius: '8px',
+      fontSize: '1rem',
+      fontWeight: 'bold',
+      color: '#22c55e',
+      border: '1px solid rgba(34, 197, 94, 0.4)'
+    },
+    mandatoryAssessment: {
+      background: 'rgba(239, 68, 68, 0.2)',
+      color: '#ef4444',
+      padding: '10px',
+      borderRadius: '8px',
+      marginTop: '10px',
+      border: '2px solid rgba(239, 68, 68, 0.5)',
+      fontWeight: '600',
+      fontSize: '0.9rem'
+    },
+    platform: {
+      position: 'absolute',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: '180px',
+      height: '15px',
+      background: 'linear-gradient(90deg, #8b5cf6, #a855f7)',
+      borderRadius: '8px',
+      boxShadow: '0 0 20px rgba(168, 85, 247, 0.6)',
+      transition: 'all 0.3s ease'
+    },
+    platformLabel: {
+      position: 'absolute',
+      top: '-35px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      background: 'rgba(0, 0, 0, 0.8)',
+      padding: '5px 10px',
+      borderRadius: '10px',
+      fontSize: '0.9rem',
+      fontWeight: '600',
+      whiteSpace: 'nowrap'
+    },
+    requiredVelocity: {
+      fontSize: '0.8rem',
+      opacity: 0.8,
+      marginTop: '2px'
+    },
+    maxHeightIndicator: {
+      position: 'absolute',
+      left: '0',
+      right: '0',
+      height: '2px',
+      background: 'rgba(245, 158, 11, 0.6)',
+      zIndex: 5,
+      transition: 'bottom 0.3s ease'
+    },
+    heightLine: {
+      position: 'absolute',
+      left: '0',
+      right: '0',
+      height: '2px',
+      background: 'currentColor',
+      border: '1px dashed rgba(245, 158, 11, 0.8)'
+    },
+    heightLabel: {
+      position: 'absolute',
+      left: '10px',
+      top: '-18px',
+      background: 'rgba(245, 158, 11, 0.9)',
+      color: 'white',
+      padding: '2px 6px',
+      borderRadius: '4px',
+      fontSize: '0.7rem',
+      fontWeight: '600'
+    },
+    orb: {
+      position: 'absolute',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: '35px',
+      height: '35px',
+      background: 'radial-gradient(circle, #60a5fa, #3b82f6)',
+      borderRadius: '50%',
+      boxShadow: '0 0 20px rgba(96, 165, 250, 0.8)',
+      zIndex: 10,
+      transition: 'all 0.3s ease'
+    },
+    orbLowPower: {
+      background: 'radial-gradient(circle, #60a5fa, #3b82f6)',
+      boxShadow: '0 0 15px rgba(96, 165, 250, 0.8)'
+    },
+    orbMediumPower: {
+      background: 'radial-gradient(circle, #f59e0b, #d97706)',
+      boxShadow: '0 0 20px rgba(245, 158, 11, 0.8)'
+    },
+    orbHighPower: {
+      background: 'radial-gradient(circle, #ef4444, #dc2626)',
+      boxShadow: '0 0 25px rgba(239, 68, 68, 0.8)'
+    },
+    orbGlow: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      width: '50px',
+      height: '50px',
+      background: 'radial-gradient(circle, rgba(96, 165, 250, 0.4), transparent 70%)',
+      borderRadius: '50%'
+    },
+    velocityDisplay: {
+      position: 'absolute',
+      top: '-25px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      background: 'rgba(0, 0, 0, 0.8)',
+      color: '#60a5fa',
+      padding: '2px 8px',
+      borderRadius: '8px',
+      fontSize: '0.7rem',
+      fontWeight: '600'
+    },
+    ground: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: '60px',
+      background: 'linear-gradient(to top, #374151, #4b5563)'
+    },
+    launchPad: {
+      position: 'absolute',
+      top: '10px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: '80px',
+      height: '6px',
+      background: 'linear-gradient(90deg, #6b7280, #9ca3af)',
+      borderRadius: '3px'
+    },
+    launchHint: {
+      position: 'absolute',
+      top: '-25px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      fontSize: '0.8rem',
+      opacity: 0.7
+    },
+    successMessage: {
+      position: 'absolute',
+      top: '-30px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      background: 'rgba(34, 197, 94, 0.9)',
+      color: 'white',
+      padding: '4px 10px',
+      borderRadius: '12px',
+      fontSize: '0.8rem',
+      fontWeight: '600'
+    },
+    missMessage: {
+      position: 'absolute',
+      top: '-30px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      background: 'rgba(245, 158, 11, 0.9)',
+      color: 'white',
+      padding: '4px 10px',
+      borderRadius: '12px',
+      fontSize: '0.8rem',
+      fontWeight: '600'
+    },
+    heightScale: {
+      position: 'absolute',
+      right: '8px',
+      top: 0,
+      bottom: 0
+    },
+    scaleMarker: {
+      position: 'absolute',
+      right: '0',
+      transform: 'translateY(50%)',
+      background: 'rgba(0, 0, 0, 0.5)',
+      padding: '2px 6px',
+      borderRadius: '4px',
+      fontSize: '0.7rem',
+      fontWeight: '600'
+    },
+    scaleTarget: {
+      background: 'rgba(245, 158, 11, 0.8)',
+      color: 'white'
+    },
+    controlSection: {
+      marginBottom: '20px'
+    },
+    controlsPanel: {
+      background: 'rgba(255, 255, 255, 0.1)',
+      padding: '20px',
+      borderRadius: '12px',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)'
+    },
+    controlLabel: {
+      display: 'block',
+      marginBottom: '10px',
+      fontWeight: '600',
+      fontSize: '1rem'
+    },
+    velocityOptions: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: '10px'
+    },
+    velocityButton: {
+      padding: '15px 10px',
+      border: '2px solid rgba(255, 255, 255, 0.2)',
+      background: 'rgba(255, 255, 255, 0.1)',
+      color: 'white',
+      borderRadius: '10px',
+      cursor: 'pointer',
+      fontSize: '0.9rem',
+      textAlign: 'center',
+      transition: 'all 0.3s ease'
+    },
+    velocityButtonActive: {
+      borderWidth: '3px',
+      fontWeight: '600',
+      transform: 'scale(1.05)'
+    },
+    velocityLow: {
+      borderColor: '#60a5fa',
+      background: 'rgba(96, 165, 250, 0.2)'
+    },
+    velocityMedium: {
+      borderColor: '#f59e0b',
+      background: 'rgba(245, 158, 11, 0.2)'
+    },
+    velocityHigh: {
+      borderColor: '#ef4444',
+      background: 'rgba(239, 68, 68, 0.2)'
+    },
+    velocityIcon: {
+      fontSize: '1.5rem',
+      marginBottom: '6px'
+    },
+    velocityValue: {
+      fontSize: '1.1rem',
+      fontWeight: 'bold',
+      marginBottom: '4px'
+    },
+    velocityDesc: {
+      fontSize: '0.8rem',
+      opacity: 0.8
+    },
+    quickInfo: {
+      background: 'rgba(0, 0, 0, 0.3)',
+      padding: '15px',
+      borderRadius: '10px',
+      margin: '20px 0',
+      borderLeft: '4px solid #8b5cf6'
+    },
+    infoRow: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '8px 0',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+      fontSize: '0.9rem'
+    },
+    timerSection: {
+      textAlign: 'center',
+      margin: '25px 0',
+      padding: '15px',
+      background: 'rgba(0, 0, 0, 0.3)',
+      borderRadius: '10px',
+      border: '2px solid rgba(96, 165, 250, 0.3)'
+    },
+    timerLabel: {
+      fontSize: '1rem',
+      marginBottom: '8px',
+      opacity: 0.9
+    },
+    timerDisplay: {
+      fontSize: '2.8rem',
+      fontWeight: 'bold',
+      color: '#60a5fa',
+      marginBottom: '8px'
+    },
+    timerHint: {
+      fontSize: '0.8rem',
+      opacity: 0.7,
+      lineHeight: '1.4'
+    },
+    actionButtons: {
+      display: 'flex',
+      gap: '12px',
+      marginBottom: '20px'
+    },
+    launchButton: {
+      flex: 2,
+      padding: '15px',
+      border: 'none',
+      borderRadius: '10px',
+      background: 'linear-gradient(45deg, #f59e0b, #eab308)',
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: '1.1rem',
+      cursor: 'pointer'
+    },
+    stopButton: {
+      flex: 2,
+      padding: '15px',
+      border: 'none',
+      borderRadius: '10px',
+      background: 'linear-gradient(45deg, #ef4444, #dc2626)',
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: '1.1rem',
+      cursor: 'pointer'
+    },
+    resetButton: {
+      flex: 1,
+      padding: '15px',
+      border: 'none',
+      borderRadius: '10px',
+      background: '#6b7280',
+      color: 'white',
+      fontWeight: 'bold',
+      cursor: 'pointer'
+    },
+    controlsMobile: {
+      background: 'rgba(255, 255, 255, 0.1)',
+      padding: '15px',
+      borderRadius: '12px',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)'
+    },
+    velocityOptionsMobile: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: '8px'
+    },
+    velocityButtonMobile: {
+      padding: '10px 6px',
+      border: '2px solid rgba(255, 255, 255, 0.2)',
+      background: 'rgba(255, 255, 255, 0.1)',
+      color: 'white',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      fontSize: '0.8rem',
+      textAlign: 'center'
+    },
+    quickInfoMobile: {
+      background: 'rgba(0, 0, 0, 0.3)',
+      padding: '12px',
+      borderRadius: '8px',
+      margin: '15px 0',
+      borderLeft: '3px solid #8b5cf6'
+    },
+    timerSectionMobile: {
+      textAlign: 'center',
+      margin: '15px 0',
+      padding: '12px',
+      background: 'rgba(0, 0, 0, 0.3)',
+      borderRadius: '8px',
+      border: '2px solid rgba(96, 165, 250, 0.3)'
+    },
+    actionButtonsMobile: {
+      display: 'flex',
+      gap: '10px'
+    },
+    launchButtonMobile: {
+      flex: 3,
+      padding: '14px',
+      border: 'none',
+      borderRadius: '10px',
+      background: 'linear-gradient(45deg, #f59e0b, #eab308)',
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: '1rem',
+      cursor: 'pointer'
+    },
+    stopButtonMobile: {
+      flex: 3,
+      padding: '14px',
+      border: 'none',
+      borderRadius: '10px',
+      background: 'linear-gradient(45deg, #ef4444, #dc2626)',
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: '1rem',
+      cursor: 'pointer'
+    },
+    resetButtonMobile: {
+      flex: 1,
+      padding: '14px',
+      border: 'none',
+      borderRadius: '10px',
+      background: '#6b7280',
+      color: 'white',
+      fontWeight: 'bold',
+      cursor: 'pointer'
+    },
+    resultsPanel: {
+      padding: '20px',
+      borderRadius: '10px',
+      marginTop: '20px'
+    },
+    resultsPanelMobile: {
+      padding: '15px',
+      borderRadius: '8px',
+      marginTop: '15px'
+    },
+    resultsSuccess: {
+      background: 'rgba(34, 197, 94, 0.2)',
+      border: '2px solid #22c55e'
+    },
+    resultsMiss: {
+      background: 'rgba(251, 191, 36, 0.2)',
+      border: '2px solid #f59e0b'
+    },
+    resultsTitle: {
+      margin: '0 0 15px 0',
+      textAlign: 'center',
+      fontSize: '1.1rem'
+    },
+    resultsGrid: {
+      display: 'grid',
+      gap: '10px',
+      marginBottom: '15px'
+    },
+    resultsGridMobile: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: '8px'
+    },
+    resultItem: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '8px 0',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+      fontSize: '0.9rem'
+    },
+    resultItemMobile: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '6px',
+      background: 'rgba(0, 0, 0, 0.2)',
+      borderRadius: '6px',
+      fontSize: '0.8rem',
+      textAlign: 'center'
+    },
+    physicsExplanation: {
+      background: 'rgba(0, 0, 0, 0.3)',
+      padding: '15px',
+      borderRadius: '8px',
+      fontSize: '0.9rem'
+    },
+    velocityAnalysis: {
+      background: 'rgba(0, 0, 0, 0.3)',
+      padding: '12px',
+      borderRadius: '6px',
+      fontSize: '0.8rem',
+      textAlign: 'center',
+      marginTop: '12px'
+    },
+    congrats: {
+      color: '#22c55e',
+      fontWeight: '600',
+      marginTop: '10px',
+      fontSize: '0.9rem'
+    },
+    suggestion: {
+      color: '#f59e0b',
+      fontWeight: '600',
+      marginTop: '10px',
+      fontSize: '0.9rem'
+    },
+    suggestionBox: {
+      background: 'rgba(245, 158, 11, 0.1)',
+      padding: '10px',
+      borderRadius: '6px',
+      borderLeft: '3px solid #f59e0b',
+      marginTop: '10px'
+    },
+    historyPanel: {
+      maxWidth: '1200px',
+      margin: '30px auto 0',
+      background: 'rgba(255, 255, 255, 0.1)',
+      padding: '20px',
+      borderRadius: '12px',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)'
+    },
+    historyPanelMobile: {
+      background: 'rgba(255, 255, 255, 0.1)',
+      padding: '15px',
+      borderRadius: '12px',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)'
+    },
+    historyTitle: {
+      margin: '0 0 15px 0',
+      textAlign: 'center',
+      fontSize: '1.1rem'
+    },
+    trialsList: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '10px'
+    },
+    trialsListMobile: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px'
+    },
+    trialItem: {
+      padding: '15px',
+      borderRadius: '8px',
+      background: 'rgba(0, 0, 0, 0.3)'
+    },
+    trialItemMobile: {
+      padding: '10px',
+      borderRadius: '6px',
+      background: 'rgba(0, 0, 0, 0.3)'
+    },
+    trialSuccess: {
+      borderLeft: '4px solid #22c55e'
+    },
+    trialMiss: {
+      borderLeft: '4px solid #f59e0b'
+    },
+    trialHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '8px',
+      fontWeight: '600',
+      fontSize: '0.9rem'
+    },
+    trialHeaderMobile: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '6px',
+      fontWeight: '600',
+      fontSize: '0.8rem'
+    },
+    trialDetails: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      fontSize: '0.8rem',
+      opacity: 0.9
+    },
+    trialDetailsMobile: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      fontSize: '0.7rem',
+      opacity: 0.9
+    },
+    noTrials: {
+      textAlign: 'center',
+      padding: '25px',
+      opacity: 0.7,
+      fontSize: '0.9rem'
+    },
+    rewardOverlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.9)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '20px'
+    },
+    rewardContent: {
+      background: 'linear-gradient(135deg, #1e3a8a 0%, #0c4a6e 100%)',
+      padding: '30px',
+      borderRadius: '15px',
+      textAlign: 'center',
+      maxWidth: '450px',
+      width: '100%',
+      border: '2px solid rgba(255, 255, 255, 0.3)'
+    },
+    rewardIcon: {
+      fontSize: '3.5rem',
+      marginBottom: '20px'
+    },
+    rewardTitle: {
+      fontSize: '1.8rem',
+      marginBottom: '15px',
+      color: '#f59e0b'
+    },
+    rewardText: {
+      marginBottom: '25px',
+      lineHeight: '1.6',
+      fontSize: '1rem'
+    },
+    rewardStats: {
+      display: 'flex',
+      justifyContent: 'space-around',
+      marginBottom: '25px',
+      padding: '15px',
+      background: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: '10px'
+    },
+    rewardStat: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '5px',
+      fontSize: '0.9rem'
+    },
+    rewardButton: {
+      padding: '15px 30px',
+      border: 'none',
+      borderRadius: '10px',
+      background: 'linear-gradient(45deg, #f59e0b, #eab308)',
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: '1.1rem',
+      cursor: 'pointer',
+      width: '100%'
+    },
+    assessmentOverlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.9)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1001,
+      padding: '20px'
+    },
+    assessmentContent: {
+      background: 'linear-gradient(135deg, #1e3a8a 0%, #0c4a6e 100%)',
+      padding: '30px',
+      borderRadius: '15px',
+      maxWidth: '600px',
+      width: '100%',
+      maxHeight: '90vh',
+      overflowY: 'auto',
+      border: '2px solid rgba(255, 255, 255, 0.3)'
+    },
+    assessmentHeader: {
+      textAlign: 'center',
+      marginBottom: '25px'
+    },
+    scoreSection: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '25px',
+      padding: '20px',
+      background: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: '12px'
+    },
+    scoreCircle: (score) => ({
+      position: 'relative',
+      width: '100px',
+      height: '100px',
+      borderRadius: '50%',
+      background: `conic-gradient(
+        ${score >= 80 ? '#22c55e' : score >= 60 ? '#f59e0b' : '#ef4444'} ${score * 3.6}deg,
+        rgba(255, 255, 255, 0.2) 0deg
+      )`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }),
+    scoreValue: {
+      fontSize: '2rem',
+      fontWeight: 'bold',
+      background: 'linear-gradient(135deg, #1e3a8a 0%, #0c4a6e 100%)',
+      width: '80px',
+      height: '80px',
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    scoreLabel: {
+      position: 'absolute',
+      bottom: '-25px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      fontSize: '0.8rem',
+      fontWeight: '600',
+      opacity: 0.8
+    },
+    performanceLevel: (color) => ({
+      fontSize: '1.5rem',
+      fontWeight: 'bold',
+      color: color,
+      textAlign: 'center'
+    }),
+    feedbackSection: {
+      marginBottom: '25px',
+      padding: '20px',
+      background: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: '10px'
+    },
+    progressBar: {
+      width: '100%',
+      background: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: '2px',
+      margin: '15px 0 8px 0'
+    },
+    progressText: {
+      textAlign: 'center',
+      fontSize: '0.9rem',
+      opacity: 0.8,
+      marginBottom: '20px'
+    },
+    questionSection: {
+      marginBottom: '25px'
+    },
+    questionTitle: {
+      fontSize: '1.2rem',
+      marginBottom: '25px',
+      lineHeight: '1.4'
+    },
+    optionsGrid: {
+      display: 'grid',
+      gap: '12px',
+      marginBottom: '20px'
+    },
+    optionButton: {
+      padding: '18px',
+      background: 'rgba(255, 255, 255, 0.05)',
+      border: '2px solid rgba(255, 255, 255, 0.2)',
+      borderRadius: '10px',
+      color: 'white',
+      textAlign: 'left',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease'
+    },
+    optionSelected: {
+      borderColor: '#3b82f6',
+      background: 'rgba(59, 130, 246, 0.15)',
+      transform: 'translateY(-2px)'
+    },
+    optionHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      marginBottom: '8px'
+    },
+    optionLetter: {
+      width: '28px',
+      height: '28px',
+      background: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontWeight: 'bold',
+      marginRight: '12px'
+    },
+    optionText: {
+      fontSize: '1.1rem',
+      fontWeight: '600',
+      flex: 1
+    },
+    optionSelectedIcon: {
+      color: '#3b82f6',
+      fontWeight: 'bold',
+      fontSize: '1.2rem'
+    },
+    optionDescription: {
+      fontSize: '0.9rem',
+      opacity: 0.8,
+      lineHeight: '1.4'
+    },
+    questionsReview: {
+      marginTop: '20px'
+    },
+    questionReviewItem: {
+      background: 'rgba(255, 255, 255, 0.05)',
+      padding: '20px',
+      borderRadius: '10px',
+      marginBottom: '15px',
+      borderLeft: '4px solid'
+    },
+    questionReviewHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '10px'
+    },
+    questionText: {
+      marginBottom: '15px',
+      lineHeight: '1.4'
+    },
+    answerReview: {
+      marginBottom: '15px',
+      fontSize: '0.95rem'
+    },
+    questionExplanation: {
+      fontSize: '0.9rem',
+      opacity: 0.9,
+      lineHeight: '1.5',
+      padding: '10px',
+      background: 'rgba(0, 0, 0, 0.3)',
+      borderRadius: '6px'
+    },
+    assessmentActions: {
+      display: 'flex',
+      gap: '15px',
+      justifyContent: 'center'
+    },
+    continueButton: {
+      padding: '12px 24px',
+      border: 'none',
+      borderRadius: '8px',
+      background: 'linear-gradient(45deg, #22c55e, #16a34a)',
+      color: 'white',
+      fontWeight: 'bold',
+      cursor: 'pointer',
+      fontSize: '1rem'
+    },
+    restartButton: {
+      padding: '12px 24px',
+      border: '2px solid rgba(255, 255, 255, 0.3)',
+      borderRadius: '8px',
+      background: 'transparent',
+      color: 'white',
+      fontWeight: 'bold',
+      cursor: 'pointer',
+      fontSize: '1rem'
+    },
+    previousButton: {
+      padding: '12px 24px',
+      border: '2px solid rgba(255, 255, 255, 0.3)',
+      borderRadius: '8px',
+      background: 'transparent',
+      color: 'white',
+      fontWeight: 'bold',
+      cursor: 'pointer',
+      fontSize: '1rem'
+    },
+    nextButton: {
+      padding: '12px 24px',
+      border: 'none',
+      borderRadius: '8px',
+      background: 'linear-gradient(45deg, #3b82f6, #8b5cf6)',
+      color: 'white',
+      fontWeight: 'bold',
+      cursor: 'pointer',
+      fontSize: '1rem'
+    },
+    submitButton: {
+      padding: '12px 24px',
+      border: 'none',
+      borderRadius: '8px',
+      background: 'linear-gradient(45deg, #22c55e, #16a34a)',
+      color: 'white',
+      fontWeight: 'bold',
+      cursor: 'pointer',
+      fontSize: '1rem'
+    },
+    blockingOverlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.95)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1002,
+      padding: '20px'
+    },
+    blockingContent: {
+      background: 'linear-gradient(135deg, #1e3a8a 0%, #0c4a6e 100%)',
+      padding: '30px',
+      borderRadius: '15px',
+      textAlign: 'center',
+      maxWidth: '500px',
+      width: '100%',
+      border: '2px solid rgba(255, 255, 255, 0.3)'
+    },
+    blockingIcon: {
+      fontSize: '4rem',
+      marginBottom: '20px'
+    },
+    assessmentInfo: {
+      background: 'rgba(255, 255, 255, 0.1)',
+      padding: '15px',
+      borderRadius: '10px',
+      margin: '20px 0',
+      textAlign: 'left'
+    },
+    assessmentList: {
+      paddingLeft: '20px',
+      marginTop: '10px',
+      fontSize: '0.9rem',
+      lineHeight: '1.6'
+    },
+    startAssessmentButton: {
+      padding: '15px 30px',
+      border: 'none',
+      borderRadius: '10px',
+      background: 'linear-gradient(45deg, #22c55e, #16a34a)',
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: '1.1rem',
+      cursor: 'pointer',
+      margin: '10px 0',
+      width: '100%'
+    },
+    reviewPracticeButton: {
+      padding: '15px 30px',
+      border: '2px solid rgba(255, 255, 255, 0.3)',
+      borderRadius: '10px',
+      background: 'transparent',
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: '1.1rem',
+      cursor: 'pointer',
+      margin: '10px 0',
+      width: '100%'
+    },
+    note: {
+      fontSize: '0.8rem',
+      opacity: 0.8,
+      marginTop: '15px',
+      fontStyle: 'italic'
+    }
+  });
+
+  const styles = getStyles(); // Get styles object once
+
   return (
     <div style={styles.container(isMobile)}>
-    
       <div style={styles.header}>
         <div style={styles.headerTopRow}>
           <button style={styles.backButton} onClick={() => navigate && navigate('menu')}>
@@ -802,7 +1945,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
         </div>
       </div>
 
-   
       <div style={styles.missionBriefing}>
         <h3>🎯 Mission Objective</h3>
         <p>Launch the orb to land perfectly on the floating platform!</p>
@@ -824,12 +1966,9 @@ const RisingOrb = ({ onComplete, navigate }) => {
         )}
       </div>
 
-    
       {isMobile ? (
         <div style={styles.mobileContent}>
-          
           <div style={styles.simulationAreaMobile}>
-            
             <div 
               style={{
                 ...styles.platform,
@@ -838,7 +1977,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
                 ...(currentMaxHeight >= targetHeight - 2 && currentMaxHeight <= targetHeight + 2 ? styles.platformHighlight : {})
               }}
             >
-             
               {orbLandedOnPlatform && (
                 <div style={styles.orbOnPlatform}>
                   <div style={styles.platformOrbGlow}></div>
@@ -850,7 +1988,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
               )}
             </div>
 
-          
             {!orbLandedOnPlatform && (
               <div 
                 style={{
@@ -871,7 +2008,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             )}
 
-           
             <div style={styles.ground}>
               <div style={styles.launchPad}>
                 {showResults && success && (
@@ -885,7 +2021,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             </div>
 
-        
             <div style={styles.heightScale}>
               {[0, 10, 20, 30, 40, 50, 60].map(height => (
                 <div 
@@ -902,9 +2037,7 @@ const RisingOrb = ({ onComplete, navigate }) => {
             </div>
           </div>
 
-         
           <div style={styles.controlsMobile}>
-          
             <div style={styles.controlSection}>
               <label style={styles.controlLabel}>Launch Velocity</label>
               <div style={styles.velocityOptionsMobile}>
@@ -928,7 +2061,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             </div>
 
-          
             <div style={styles.quickInfoMobile}>
               <div style={styles.infoRow}>
                 <span>Platform Height:</span>
@@ -956,7 +2088,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             </div>
 
-         
             <div style={styles.timerSectionMobile}>
               <div style={styles.timerLabel}>Airtime</div>
               <div style={styles.timerDisplay}>{airTime}s</div>
@@ -1045,7 +2176,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
             </div>
           )}
 
-      
           <div style={styles.historyPanelMobile}>
             <h3 style={styles.historyTitle}>Recent Launches</h3>
             {trials.length > 0 ? (
@@ -1082,11 +2212,8 @@ const RisingOrb = ({ onComplete, navigate }) => {
           </div>
         </div>
       ) : (
-       
         <div style={styles.content}>
-          
           <div style={styles.simulationArea}>
-            
             <div 
               style={{
                 ...styles.platform,
@@ -1107,7 +2234,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
                 </div>
               </div>
               
-             
               {orbLandedOnPlatform && (
                 <div style={styles.orbOnPlatform}>
                   <div style={styles.platformOrbGlow}></div>
@@ -1119,7 +2245,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
               )}
             </div>
 
-          
             {!isLaunching && !orbLandedOnPlatform && (
               <div 
                 style={{
@@ -1135,7 +2260,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             )}
 
-          
             {!orbLandedOnPlatform && (
               <div 
                 style={{
@@ -1156,7 +2280,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             )}
 
-          
             <div style={styles.ground}>
               <div style={styles.launchPad}>
                 {!isLaunching && !showResults && (
@@ -1173,7 +2296,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             </div>
 
-        
             <div style={styles.heightScale}>
               {[0, 10, 20, 30, 40, 50, 60, 70].map(height => (
                 <div 
@@ -1191,7 +2313,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
           </div>
 
           <div style={styles.controlsPanel}>
-          
             <div style={styles.missionInfo}>
               <h3 style={styles.missionTitle}>🎯 Random Platform Challenge</h3>
               <p style={styles.missionText}>
@@ -1217,7 +2338,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
               )}
             </div>
 
-        
             <div style={styles.controlSection}>
               <label style={styles.controlLabel}>Select Launch Velocity</label>
               <div style={styles.velocityOptions}>
@@ -1241,7 +2361,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             </div>
 
-        
             <div style={styles.quickInfo}>
               <div style={styles.infoRow}>
                 <span>Platform Height:</span>
@@ -1274,7 +2393,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
               </div>
             </div>
 
-          
             <div style={styles.timerSection}>
               <div style={styles.timerLabel}>Airtime</div>
               <div style={styles.timerDisplay}>{airTime}s</div>
@@ -1377,7 +2495,6 @@ const RisingOrb = ({ onComplete, navigate }) => {
         </div>
       )}
 
-
       {!isMobile && (
         <div style={styles.historyPanel}>
           <h3 style={styles.historyTitle}>Launch History</h3>
@@ -1462,1241 +2579,9 @@ const RisingOrb = ({ onComplete, navigate }) => {
       )}
 
       {showAssessment && <AssessmentPanel />}
-
-    
       {assessmentBlocked && !assessmentCompleted && !showAssessment && <AssessmentBlockingOverlay />}
     </div>
   );
-};
-
-const styles = {
-  container: (isMobile) => ({
-    padding: isMobile ? '10px' : '20px',
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #0c4a6e 0%, #1e40af 50%, #1e1b4b 100%)',
-    color: 'white',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    paddingBottom: isMobile ? '80px' : '20px'
-  }),
-  header: {
-    textAlign: 'center',
-    marginBottom: '20px'
-  },
-  headerTopRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '15px'
-  },
-  backButton: {
-    background: 'rgba(255, 255, 255, 0.1)',
-    border: '1px solid rgba(255, 255, 255, 0.3)',
-    color: 'white',
-    padding: '10px 15px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px'
-  },
-  assessmentButton: {
-    background: 'linear-gradient(45deg, #ef4444, #dc2626)',
-    border: 'none',
-    color: 'white',
-    padding: '10px 15px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '600'
-  },
-  title: {
-    fontSize: '2rem',
-    margin: '0 0 8px 0',
-    background: 'linear-gradient(45deg, #60a5fa, #a855f7)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent'
-  },
-  subtitle: {
-    fontSize: '1rem',
-    opacity: 0.9,
-    margin: '0 0 12px 0'
-  },
-  questInfo: {
-    background: 'rgba(245, 158, 11, 0.2)',
-    padding: '6px 12px',
-    borderRadius: '15px',
-    display: 'inline-block',
-    fontSize: '0.8rem',
-    border: '1px solid rgba(245, 158, 11, 0.5)'
-  },
-  trialCount: {
-    fontSize: '0.8rem',
-    opacity: 0.8,
-    marginLeft: '8px'
-  },
-  missionBriefing: {
-    background: 'rgba(255, 255, 255, 0.1)',
-    padding: '15px',
-    borderRadius: '10px',
-    marginBottom: '20px',
-    textAlign: 'center',
-    border: '2px solid rgba(96, 165, 250, 0.3)'
-  },
-  assessmentWarning: {
-    background: 'rgba(239, 68, 68, 0.2)',
-    color: '#ef4444',
-    padding: '8px 12px',
-    borderRadius: '8px',
-    marginTop: '10px',
-    border: '1px solid rgba(239, 68, 68, 0.5)',
-    fontWeight: '600'
-  },
-  platformInfo: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: '15px',
-    marginTop: '10px',
-    flexWrap: 'wrap'
-  },
-  newPlatformButton: {
-    background: 'rgba(168, 85, 247, 0.3)',
-    border: '1px solid #a855f7',
-    color: 'white',
-    padding: '8px 12px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '0.8rem',
-    fontWeight: '600'
-  },
-  newPlatformButtonMobile: {
-    background: 'rgba(168, 85, 247, 0.3)',
-    border: '1px solid #a855f7',
-    color: 'white',
-    padding: '12px 8px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '0.8rem',
-    fontWeight: '600',
-    flex: 1
-  },
-
-  // Platform with landing state
-  platformActive: {
-    boxShadow: '0 0 40px rgba(34, 197, 94, 0.8)',
-    border: '3px solid #22c55e',
-    animation: 'pulse 1.5s ease-in-out infinite'
-  },
-  platformHighlight: {
-    boxShadow: '0 0 25px rgba(34, 197, 94, 0.6)',
-    border: '2px solid #22c55e'
-  },
-
-  // Orb on Platform
-  orbOnPlatform: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    zIndex: 15
-  },
-  platformOrbGlow: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '50px',
-    height: '50px',
-    background: 'radial-gradient(circle, rgba(34, 197, 94, 0.6) 0%, transparent 70%)',
-    borderRadius: '50%',
-    animation: 'pulse 2s ease-in-out infinite'
-  },
-  platformOrb: {
-    position: 'relative',
-    fontSize: '1.8rem',
-    filter: 'drop-shadow(0 0 15px rgba(34, 197, 94, 0.8))',
-    zIndex: 16
-  },
-  landingVelocity: {
-    position: 'absolute',
-    top: '-25px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    background: 'rgba(0, 0, 0, 0.8)',
-    color: '#22c55e',
-    padding: '3px 8px',
-    borderRadius: '10px',
-    fontSize: '0.7rem',
-    fontWeight: '600',
-    whiteSpace: 'nowrap'
-  },
-
-  // Landing Info
-  landingInfo: {
-    background: 'rgba(34, 197, 94, 0.2)',
-    padding: '12px',
-    borderRadius: '8px',
-    margin: '10px 0',
-    borderLeft: '4px solid #22c55e'
-  },
-
-  // Platform Control
-  platformControl: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    margin: '10px 0',
-    padding: '10px',
-    background: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: '8px'
-  },
-
-  // Badges
-  platformHeightBadge: {
-    background: 'rgba(168, 85, 247, 0.3)',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    fontSize: '0.7rem',
-    fontWeight: '600'
-  },
-  landedBadge: {
-    background: 'rgba(34, 197, 94, 0.3)',
-    color: '#22c55e',
-    padding: '3px 8px',
-    borderRadius: '4px',
-    fontSize: '0.7rem',
-    fontWeight: '600',
-    marginTop: '5px',
-    textAlign: 'center'
-  },
-
-  // Desktop Styles
-  content: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '20px',
-    maxWidth: '1200px',
-    margin: '0 auto',
-    alignItems: 'start'
-  },
-  simulationArea: {
-    position: 'relative',
-    height: '500px',
-    background: 'linear-gradient(180deg, #1e40af 0%, #0c4a6e 100%)',
-    borderRadius: '12px',
-    border: '2px solid rgba(255, 255, 255, 0.1)',
-    overflow: 'hidden'
-  },
-
-  // Mobile Styles
-  mobileContent: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '15px'
-  },
-  simulationAreaMobile: {
-    position: 'relative',
-    height: '400px',
-    background: 'linear-gradient(180deg, #1e40af 0%, #0c4a6e 100%)',
-    borderRadius: '12px',
-    border: '2px solid rgba(255, 255, 255, 0.1)',
-    overflow: 'hidden'
-  },
-
-  // Mission Info
-  missionInfo: {
-    background: 'rgba(96, 165, 250, 0.2)',
-    padding: '15px',
-    borderRadius: '10px',
-    marginBottom: '20px',
-    border: '2px solid rgba(96, 165, 250, 0.4)',
-    textAlign: 'center'
-  },
-  missionTitle: {
-    margin: '0 0 10px 0',
-    color: '#60a5fa'
-  },
-  missionText: {
-    margin: '0 0 10px 0',
-    fontSize: '0.9rem',
-    lineHeight: '1.4'
-  },
-  perfectVelocity: {
-    background: 'rgba(34, 197, 94, 0.2)',
-    padding: '8px 12px',
-    borderRadius: '8px',
-    fontSize: '1rem',
-    fontWeight: 'bold',
-    color: '#22c55e',
-    border: '1px solid rgba(34, 197, 94, 0.4)'
-  },
-  mandatoryAssessment: {
-    background: 'rgba(239, 68, 68, 0.2)',
-    color: '#ef4444',
-    padding: '10px',
-    borderRadius: '8px',
-    marginTop: '10px',
-    border: '2px solid rgba(239, 68, 68, 0.5)',
-    fontWeight: '600',
-    fontSize: '0.9rem'
-  },
-
-  // Platform
-  platform: {
-    position: 'absolute',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    width: '180px',
-    height: '15px',
-    background: 'linear-gradient(90deg, #8b5cf6, #a855f7)',
-    borderRadius: '8px',
-    boxShadow: '0 0 20px rgba(168, 85, 247, 0.6)',
-    transition: 'all 0.3s ease'
-  },
-  platformLabel: {
-    position: 'absolute',
-    top: '-35px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    background: 'rgba(0, 0, 0, 0.8)',
-    padding: '5px 10px',
-    borderRadius: '10px',
-    fontSize: '0.9rem',
-    fontWeight: '600',
-    whiteSpace: 'nowrap'
-  },
-  requiredVelocity: {
-    fontSize: '0.8rem',
-    opacity: 0.8,
-    marginTop: '2px'
-  },
-
-  // Max Height Indicator
-  maxHeightIndicator: {
-    position: 'absolute',
-    left: '0',
-    right: '0',
-    height: '2px',
-    background: 'rgba(245, 158, 11, 0.6)',
-    zIndex: 5,
-    transition: 'bottom 0.3s ease'
-  },
-  heightLine: {
-    position: 'absolute',
-    left: '0',
-    right: '0',
-    height: '2px',
-    background: 'currentColor',
-    border: '1px dashed rgba(245, 158, 11, 0.8)'
-  },
-  heightLabel: {
-    position: 'absolute',
-    left: '10px',
-    top: '-18px',
-    background: 'rgba(245, 158, 11, 0.9)',
-    color: 'white',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    fontSize: '0.7rem',
-    fontWeight: '600'
-  },
-
-  // Orb
-  orb: {
-    position: 'absolute',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    width: '35px',
-    height: '35px',
-    background: 'radial-gradient(circle, #60a5fa, #3b82f6)',
-    borderRadius: '50%',
-    boxShadow: '0 0 20px rgba(96, 165, 250, 0.8)',
-    zIndex: 10,
-    transition: 'all 0.3s ease'
-  },
-  orbLowPower: {
-    background: 'radial-gradient(circle, #60a5fa, #3b82f6)',
-    boxShadow: '0 0 15px rgba(96, 165, 250, 0.8)'
-  },
-  orbMediumPower: {
-    background: 'radial-gradient(circle, #f59e0b, #d97706)',
-    boxShadow: '0 0 20px rgba(245, 158, 11, 0.8)'
-  },
-  orbHighPower: {
-    background: 'radial-gradient(circle, #ef4444, #dc2626)',
-    boxShadow: '0 0 25px rgba(239, 68, 68, 0.8)'
-  },
-  orbGlow: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '50px',
-    height: '50px',
-    background: 'radial-gradient(circle, rgba(96, 165, 250, 0.4), transparent 70%)',
-    borderRadius: '50%'
-  },
-  velocityDisplay: {
-    position: 'absolute',
-    top: '-25px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    background: 'rgba(0, 0, 0, 0.8)',
-    color: '#60a5fa',
-    padding: '2px 8px',
-    borderRadius: '8px',
-    fontSize: '0.7rem',
-    fontWeight: '600'
-  },
-
-  // Ground
-  ground: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '60px',
-    background: 'linear-gradient(to top, #374151, #4b5563)'
-  },
-  launchPad: {
-    position: 'absolute',
-    top: '10px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    width: '80px',
-    height: '6px',
-    background: 'linear-gradient(90deg, #6b7280, #9ca3af)',
-    borderRadius: '3px'
-  },
-  launchHint: {
-    position: 'absolute',
-    top: '-25px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    fontSize: '0.8rem',
-    opacity: 0.7
-  },
-  successMessage: {
-    position: 'absolute',
-    top: '-30px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    background: 'rgba(34, 197, 94, 0.9)',
-    color: 'white',
-    padding: '4px 10px',
-    borderRadius: '12px',
-    fontSize: '0.8rem',
-    fontWeight: '600'
-  },
-  missMessage: {
-    position: 'absolute',
-    top: '-30px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    background: 'rgba(245, 158, 11, 0.9)',
-    color: 'white',
-    padding: '4px 10px',
-    borderRadius: '12px',
-    fontSize: '0.8rem',
-    fontWeight: '600'
-  },
-
-  // Height Scale
-  heightScale: {
-    position: 'absolute',
-    right: '8px',
-    top: 0,
-    bottom: 0
-  },
-  scaleMarker: {
-    position: 'absolute',
-    right: '0',
-    transform: 'translateY(50%)',
-    background: 'rgba(0, 0, 0, 0.5)',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    fontSize: '0.7rem',
-    fontWeight: '600'
-  },
-  scaleTarget: {
-    background: 'rgba(245, 158, 11, 0.8)',
-    color: 'white'
-  },
-
-  // Control Sections
-  controlSection: {
-    marginBottom: '20px'
-  },
-
-  // Desktop Controls
-  controlsPanel: {
-    background: 'rgba(255, 255, 255, 0.1)',
-    padding: '20px',
-    borderRadius: '12px',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.2)'
-  },
-  controlLabel: {
-    display: 'block',
-    marginBottom: '10px',
-    fontWeight: '600',
-    fontSize: '1rem'
-  },
-
-  // Velocity Selection
-  velocityOptions: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '10px'
-  },
-  velocityButton: {
-    padding: '15px 10px',
-    border: '2px solid rgba(255, 255, 255, 0.2)',
-    background: 'rgba(255, 255, 255, 0.1)',
-    color: 'white',
-    borderRadius: '10px',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-    textAlign: 'center',
-    transition: 'all 0.3s ease'
-  },
-  velocityButtonActive: {
-    borderWidth: '3px',
-    fontWeight: '600',
-    transform: 'scale(1.05)'
-  },
-  velocityLow: {
-    borderColor: '#60a5fa',
-    background: 'rgba(96, 165, 250, 0.2)'
-  },
-  velocityMedium: {
-    borderColor: '#f59e0b',
-    background: 'rgba(245, 158, 11, 0.2)'
-  },
-  velocityHigh: {
-    borderColor: '#ef4444',
-    background: 'rgba(239, 68, 68, 0.2)'
-  },
-  velocityIcon: {
-    fontSize: '1.5rem',
-    marginBottom: '6px'
-  },
-  velocityValue: {
-    fontSize: '1.1rem',
-    fontWeight: 'bold',
-    marginBottom: '4px'
-  },
-  velocityDesc: {
-    fontSize: '0.8rem',
-    opacity: 0.8
-  },
-
-  // Quick Info
-  quickInfo: {
-    background: 'rgba(0, 0, 0, 0.3)',
-    padding: '15px',
-    borderRadius: '10px',
-    margin: '20px 0',
-    borderLeft: '4px solid #8b5cf6'
-  },
-  infoRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '8px 0',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-    fontSize: '0.9rem'
-  },
-
-  // Timer
-  timerSection: {
-    textAlign: 'center',
-    margin: '25px 0',
-    padding: '15px',
-    background: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: '10px',
-    border: '2px solid rgba(96, 165, 250, 0.3)'
-  },
-  timerLabel: {
-    fontSize: '1rem',
-    marginBottom: '8px',
-    opacity: 0.9
-  },
-  timerDisplay: {
-    fontSize: '2.8rem',
-    fontWeight: 'bold',
-    color: '#60a5fa',
-    marginBottom: '8px'
-  },
-  timerHint: {
-    fontSize: '0.8rem',
-    opacity: 0.7,
-    lineHeight: '1.4'
-  },
-
-  // Action Buttons
-  actionButtons: {
-    display: 'flex',
-    gap: '12px',
-    marginBottom: '20px'
-  },
-  launchButton: {
-    flex: 2,
-    padding: '15px',
-    border: 'none',
-    borderRadius: '10px',
-    background: 'linear-gradient(45deg, #f59e0b, #eab308)',
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: '1.1rem',
-    cursor: 'pointer'
-  },
-  stopButton: {
-    flex: 2,
-    padding: '15px',
-    border: 'none',
-    borderRadius: '10px',
-    background: 'linear-gradient(45deg, #ef4444, #dc2626)',
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: '1.1rem',
-    cursor: 'pointer'
-  },
-  resetButton: {
-    flex: 1,
-    padding: '15px',
-    border: 'none',
-    borderRadius: '10px',
-    background: '#6b7280',
-    color: 'white',
-    fontWeight: 'bold',
-    cursor: 'pointer'
-  },
-
-  // Mobile Controls
-  controlsMobile: {
-    background: 'rgba(255, 255, 255, 0.1)',
-    padding: '15px',
-    borderRadius: '12px',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.2)'
-  },
-  velocityOptionsMobile: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '8px'
-  },
-  velocityButtonMobile: {
-    padding: '10px 6px',
-    border: '2px solid rgba(255, 255, 255, 0.2)',
-    background: 'rgba(255, 255, 255, 0.1)',
-    color: 'white',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '0.8rem',
-    textAlign: 'center'
-  },
-
-  // Mobile Quick Info
-  quickInfoMobile: {
-    background: 'rgba(0, 0, 0, 0.3)',
-    padding: '12px',
-    borderRadius: '8px',
-    margin: '15px 0',
-    borderLeft: '3px solid #8b5cf6'
-  },
-
-  // Mobile Timer
-  timerSectionMobile: {
-    textAlign: 'center',
-    margin: '15px 0',
-    padding: '12px',
-    background: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: '8px',
-    border: '2px solid rgba(96, 165, 250, 0.3)'
-  },
-
-  // Mobile Action Buttons
-  actionButtonsMobile: {
-    display: 'flex',
-    gap: '10px'
-  },
-  launchButtonMobile: {
-    flex: 3,
-    padding: '14px',
-    border: 'none',
-    borderRadius: '10px',
-    background: 'linear-gradient(45deg, #f59e0b, #eab308)',
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: '1rem',
-    cursor: 'pointer'
-  },
-  stopButtonMobile: {
-    flex: 3,
-    padding: '14px',
-    border: 'none',
-    borderRadius: '10px',
-    background: 'linear-gradient(45deg, #ef4444, #dc2626)',
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: '1rem',
-    cursor: 'pointer'
-  },
-  resetButtonMobile: {
-    flex: 1,
-    padding: '14px',
-    border: 'none',
-    borderRadius: '10px',
-    background: '#6b7280',
-    color: 'white',
-    fontWeight: 'bold',
-    cursor: 'pointer'
-  },
-
-  // Results Panels
-  resultsPanel: {
-    padding: '20px',
-    borderRadius: '10px',
-    marginTop: '20px'
-  },
-  resultsPanelMobile: {
-    padding: '15px',
-    borderRadius: '8px',
-    marginTop: '15px'
-  },
-  resultsSuccess: {
-    background: 'rgba(34, 197, 94, 0.2)',
-    border: '2px solid #22c55e'
-  },
-  resultsMiss: {
-    background: 'rgba(251, 191, 36, 0.2)',
-    border: '2px solid #f59e0b'
-  },
-  resultsTitle: {
-    margin: '0 0 15px 0',
-    textAlign: 'center',
-    fontSize: '1.1rem'
-  },
-  resultsGrid: {
-    display: 'grid',
-    gap: '10px',
-    marginBottom: '15px'
-  },
-  resultsGridMobile: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '8px'
-  },
-  resultItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '8px 0',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-    fontSize: '0.9rem'
-  },
-  resultItemMobile: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '6px',
-    background: 'rgba(0, 0, 0, 0.2)',
-    borderRadius: '6px',
-    fontSize: '0.8rem',
-    textAlign: 'center'
-  },
-
-  // Physics Explanation
-  physicsExplanation: {
-    background: 'rgba(0, 0, 0, 0.3)',
-    padding: '15px',
-    borderRadius: '8px',
-    fontSize: '0.9rem'
-  },
-  velocityAnalysis: {
-    background: 'rgba(0, 0, 0, 0.3)',
-    padding: '12px',
-    borderRadius: '6px',
-    fontSize: '0.8rem',
-    textAlign: 'center',
-    marginTop: '12px'
-  },
-  congrats: {
-    color: '#22c55e',
-    fontWeight: '600',
-    marginTop: '10px',
-    fontSize: '0.9rem'
-  },
-  suggestion: {
-    color: '#f59e0b',
-    fontWeight: '600',
-    marginTop: '10px',
-    fontSize: '0.9rem'
-  },
-  suggestionBox: {
-    background: 'rgba(245, 158, 11, 0.1)',
-    padding: '10px',
-    borderRadius: '6px',
-    borderLeft: '3px solid #f59e0b',
-    marginTop: '10px'
-  },
-
-  // History Panels
-  historyPanel: {
-    maxWidth: '1200px',
-    margin: '30px auto 0',
-    background: 'rgba(255, 255, 255, 0.1)',
-    padding: '20px',
-    borderRadius: '12px',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.2)'
-  },
-  historyPanelMobile: {
-    background: 'rgba(255, 255, 255, 0.1)',
-    padding: '15px',
-    borderRadius: '12px',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.2)'
-  },
-  historyTitle: {
-    margin: '0 0 15px 0',
-    textAlign: 'center',
-    fontSize: '1.1rem'
-  },
-  trialsList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px'
-  },
-  trialsListMobile: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px'
-  },
-  trialItem: {
-    padding: '15px',
-    borderRadius: '8px',
-    background: 'rgba(0, 0, 0, 0.3)'
-  },
-  trialItemMobile: {
-    padding: '10px',
-    borderRadius: '6px',
-    background: 'rgba(0, 0, 0, 0.3)'
-  },
-  trialSuccess: {
-    borderLeft: '4px solid #22c55e'
-  },
-  trialMiss: {
-    borderLeft: '4px solid #f59e0b'
-  },
-  trialHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '8px',
-    fontWeight: '600',
-    fontSize: '0.9rem'
-  },
-  trialHeaderMobile: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '6px',
-    fontWeight: '600',
-    fontSize: '0.8rem'
-  },
-  trialDetails: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    fontSize: '0.8rem',
-    opacity: 0.9
-  },
-  trialDetailsMobile: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    fontSize: '0.7rem',
-    opacity: 0.9
-  },
-  noTrials: {
-    textAlign: 'center',
-    padding: '25px',
-    opacity: 0.7,
-    fontSize: '0.9rem'
-  },
-
-  // Reward Popup
-  rewardOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'rgba(0, 0, 0, 0.9)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-    padding: '20px'
-  },
-  rewardContent: {
-    background: 'linear-gradient(135deg, #1e3a8a 0%, #0c4a6e 100%)',
-    padding: '30px',
-    borderRadius: '15px',
-    textAlign: 'center',
-    maxWidth: '450px',
-    width: '100%',
-    border: '2px solid rgba(255, 255, 255, 0.3)'
-  },
-  rewardIcon: {
-    fontSize: '3.5rem',
-    marginBottom: '20px'
-  },
-  rewardTitle: {
-    fontSize: '1.8rem',
-    marginBottom: '15px',
-    color: '#f59e0b'
-  },
-  rewardText: {
-    marginBottom: '25px',
-    lineHeight: '1.6',
-    fontSize: '1rem'
-  },
-  rewardStats: {
-    display: 'flex',
-    justifyContent: 'space-around',
-    marginBottom: '25px',
-    padding: '15px',
-    background: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: '10px'
-  },
-  rewardStat: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '5px',
-    fontSize: '0.9rem'
-  },
-  rewardButton: {
-    padding: '15px 30px',
-    border: 'none',
-    borderRadius: '10px',
-    background: 'linear-gradient(45deg, #f59e0b, #eab308)',
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: '1.1rem',
-    cursor: 'pointer',
-    width: '100%'
-  },
-
-  // Assessment Styles
-  assessmentOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'rgba(0, 0, 0, 0.9)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1001,
-    padding: '20px'
-  },
-  assessmentContent: {
-    background: 'linear-gradient(135deg, #1e3a8a 0%, #0c4a6e 100%)',
-    padding: '30px',
-    borderRadius: '15px',
-    maxWidth: '600px',
-    width: '100%',
-    maxHeight: '90vh',
-    overflowY: 'auto',
-    border: '2px solid rgba(255, 255, 255, 0.3)'
-  },
-  assessmentHeader: {
-    textAlign: 'center',
-    marginBottom: '25px'
-  },
-  scoreSection: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '25px',
-    padding: '20px',
-    background: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: '12px'
-  },
-  scoreCircle: (score) => ({
-    position: 'relative',
-    width: '100px',
-    height: '100px',
-    borderRadius: '50%',
-    background: `conic-gradient(
-      ${score >= 80 ? '#22c55e' : score >= 60 ? '#f59e0b' : '#ef4444'} ${score * 3.6}deg,
-      rgba(255, 255, 255, 0.2) 0deg
-    )`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  }),
-  scoreValue: {
-    fontSize: '2rem',
-    fontWeight: 'bold',
-    background: 'linear-gradient(135deg, #1e3a8a 0%, #0c4a6e 100%)',
-    width: '80px',
-    height: '80px',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  scoreLabel: {
-    position: 'absolute',
-    bottom: '-25px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    fontSize: '0.8rem',
-    fontWeight: '600',
-    opacity: 0.8
-  },
-  performanceLevel: (color) => ({
-    fontSize: '1.5rem',
-    fontWeight: 'bold',
-    color: color,
-    textAlign: 'center'
-  }),
-  feedbackSection: {
-    marginBottom: '25px',
-    padding: '20px',
-    background: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: '10px'
-  },
-  progressBar: {
-    width: '100%',
-    background: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: '2px',
-    margin: '15px 0 8px 0'
-  },
-  progressText: {
-    textAlign: 'center',
-    fontSize: '0.9rem',
-    opacity: 0.8,
-    marginBottom: '20px'
-  },
-  questionSection: {
-    marginBottom: '25px'
-  },
-  questionTitle: {
-    fontSize: '1.2rem',
-    marginBottom: '25px',
-    lineHeight: '1.4'
-  },
-  optionsGrid: {
-    display: 'grid',
-    gap: '12px',
-    marginBottom: '20px'
-  },
-  optionButton: {
-    padding: '18px',
-    background: 'rgba(255, 255, 255, 0.05)',
-    border: '2px solid rgba(255, 255, 255, 0.2)',
-    borderRadius: '10px',
-    color: 'white',
-    textAlign: 'left',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease'
-  },
-  optionSelected: {
-    borderColor: '#3b82f6',
-    background: 'rgba(59, 130, 246, 0.15)',
-    transform: 'translateY(-2px)'
-  },
-  optionHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    marginBottom: '8px'
-  },
-  optionLetter: {
-    width: '28px',
-    height: '28px',
-    background: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: 'bold',
-    marginRight: '12px'
-  },
-  optionText: {
-    fontSize: '1.1rem',
-    fontWeight: '600',
-    flex: 1
-  },
-  optionSelectedIcon: {
-    color: '#3b82f6',
-    fontWeight: 'bold',
-    fontSize: '1.2rem'
-  },
-  optionDescription: {
-    fontSize: '0.9rem',
-    opacity: 0.8,
-    lineHeight: '1.4'
-  },
-  questionsReview: {
-    marginTop: '20px'
-  },
-  questionReviewItem: {
-    background: 'rgba(255, 255, 255, 0.05)',
-    padding: '20px',
-    borderRadius: '10px',
-    marginBottom: '15px',
-    borderLeft: '4px solid'
-  },
-  questionReviewHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '10px'
-  },
-  questionText: {
-    marginBottom: '15px',
-    lineHeight: '1.4'
-  },
-  answerReview: {
-    marginBottom: '15px',
-    fontSize: '0.95rem'
-  },
-  questionExplanation: {
-    fontSize: '0.9rem',
-    opacity: 0.9,
-    lineHeight: '1.5',
-    padding: '10px',
-    background: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: '6px'
-  },
-  assessmentActions: {
-    display: 'flex',
-    gap: '15px',
-    justifyContent: 'center'
-  },
-  continueButton: {
-    padding: '12px 24px',
-    border: 'none',
-    borderRadius: '8px',
-    background: 'linear-gradient(45deg, #22c55e, #16a34a)',
-    color: 'white',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    fontSize: '1rem'
-  },
-  restartButton: {
-    padding: '12px 24px',
-    border: '2px solid rgba(255, 255, 255, 0.3)',
-    borderRadius: '8px',
-    background: 'transparent',
-    color: 'white',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    fontSize: '1rem'
-  },
-  previousButton: {
-    padding: '12px 24px',
-    border: '2px solid rgba(255, 255, 255, 0.3)',
-    borderRadius: '8px',
-    background: 'transparent',
-    color: 'white',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    fontSize: '1rem'
-  },
-  nextButton: {
-    padding: '12px 24px',
-    border: 'none',
-    borderRadius: '8px',
-    background: 'linear-gradient(45deg, #3b82f6, #8b5cf6)',
-    color: 'white',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    fontSize: '1rem'
-  },
-  submitButton: {
-    padding: '12px 24px',
-    border: 'none',
-    borderRadius: '8px',
-    background: 'linear-gradient(45deg, #22c55e, #16a34a)',
-    color: 'white',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    fontSize: '1rem'
-  },
-
-  // Blocking Overlay Styles
-  blockingOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'rgba(0, 0, 0, 0.95)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1002,
-    padding: '20px'
-  },
-  blockingContent: {
-    background: 'linear-gradient(135deg, #1e3a8a 0%, #0c4a6e 100%)',
-    padding: '30px',
-    borderRadius: '15px',
-    textAlign: 'center',
-    maxWidth: '500px',
-    width: '100%',
-    border: '2px solid rgba(255, 255, 255, 0.3)'
-  },
-  blockingIcon: {
-    fontSize: '4rem',
-    marginBottom: '20px'
-  },
-  assessmentInfo: {
-    background: 'rgba(255, 255, 255, 0.1)',
-    padding: '15px',
-    borderRadius: '10px',
-    margin: '20px 0',
-    textAlign: 'left'
-  },
-  assessmentList: {
-    paddingLeft: '20px',
-    marginTop: '10px',
-    fontSize: '0.9rem',
-    lineHeight: '1.6'
-  },
-  startAssessmentButton: {
-    padding: '15px 30px',
-    border: 'none',
-    borderRadius: '10px',
-    background: 'linear-gradient(45deg, #22c55e, #16a34a)',
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: '1.1rem',
-    cursor: 'pointer',
-    margin: '10px 0',
-    width: '100%'
-  },
-  reviewPracticeButton: {
-    padding: '15px 30px',
-    border: '2px solid rgba(255, 255, 255, 0.3)',
-    borderRadius: '10px',
-    background: 'transparent',
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: '1.1rem',
-    cursor: 'pointer',
-    margin: '10px 0',
-    width: '100%'
-  },
-  note: {
-    fontSize: '0.8rem',
-    opacity: 0.8,
-    marginTop: '15px',
-    fontStyle: 'italic'
-  }
 };
 
 export default RisingOrb;

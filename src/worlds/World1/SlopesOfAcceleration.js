@@ -600,594 +600,597 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
 
   const canPosition = calculateCanPosition(startPoint, rampAngle);
 
-  const styles = {
-    container: {
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1e1b4b 0%, #581c87 50%, #1e1b4b 100%)',
-      color: 'white',
-      padding: '16px',
-      fontFamily: 'Arial, sans-serif'
-    },
-    header: {
-      marginBottom: '24px'
-    },
-    backButton: {
-      marginBottom: '12px',
-      padding: '8px 16px',
-      background: 'rgba(255, 255, 255, 0.1)',
-      border: 'none',
-      borderRadius: '8px',
-      color: 'white',
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      fontSize: '14px'
-    },
-    title: {
-      fontSize: '28px',
-      fontWeight: 'bold',
-      marginBottom: '8px',
-      margin: 0
-    },
-    subtitle: {
-      color: '#e9d5ff',
-      fontSize: '14px',
-      margin: 0
-    },
-    section: {
-      background: 'rgba(255, 255, 255, 0.05)',
-      backdropFilter: 'blur(12px)',
-      borderRadius: '12px',
-      padding: '16px',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
-      marginBottom: '24px'
-    },
-    simulationBox: {
-      position: 'relative',
-      height: '550px',
-      overflow: 'visible',
-      borderRadius: '8px',
-      background: 'linear-gradient(to bottom, rgba(12, 74, 110, 0.2), rgba(20, 83, 45, 0.2))'
-    },
-    ground: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: '64px',
-      background: 'linear-gradient(to top, #374151, #4b5563)'
-    },
-    rampContainer: {
-      position: 'absolute',
-      top: '32px',
-      left: '32px',
-      zIndex: 2,
-      transformOrigin: 'left top'
-    },
-    ramp: {
-      width: `${rampLengthPixels}px`,
-      height: '16px',
-      transform: `rotate(${rampAngle}deg)`,
-      transformOrigin: 'left top'
-    },
-    rampSurface: {
-      width: '100%',
-      height: '100%',
-      background: 'linear-gradient(to right, #a855f7, #60a5fa)',
-      borderRadius: '0 8px 8px 0',
-      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
-      position: 'relative'
-    },
-    rampSupport: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '4px',
-      height: `${(actualHeight / 100) * PIXELS_PER_METER}px`,
-      background: '#9333ea',
-      transform: 'translateY(-100%) rotate(0deg)'
-    },
-    can: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '40px',
-      height: '40px',
-      borderRadius: '50%',
-      background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-      zIndex: 10,
-      transition: 'none',
-      willChange: 'transform',
-      filter: 'drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4))',
-      transform: 'translate(32px, 32px) rotate(0deg)',
-      transformOrigin: 'center center',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: 'white',
-      fontWeight: 'bold',
-      fontSize: '14px',
-      border: '2px solid #92400e',
-      boxShadow: 'inset 0 0 8px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.3)'
-    },
-    canLabel: {
-      pointerEvents: 'none',
-      userSelect: 'none'
-    },
-    marker: {
-      position: 'absolute',
-      background: 'rgba(255, 255, 255, 0.9)',
-      color: '#581c87',
-      padding: '4px 12px',
-      borderRadius: '4px',
-      fontSize: '11px',
-      fontWeight: 'bold'
-    },
-    distanceMarker: {
-      position: 'absolute',
-      background: 'rgba(255, 255, 255, 0.7)',
-      color: '#1e1b4b',
-      padding: '2px 6px',
-      borderRadius: '3px',
-      fontSize: '10px',
-      fontWeight: 'bold',
-      border: '1px solid rgba(0, 0, 0, 0.2)',
-      transform: `rotate(${-rampAngle}deg)`
-    },
-    angleDisplay: {
-      position: 'absolute',
-      top: '80px',
-      left: '16px',
-      fontSize: '12px',
-      background: 'rgba(0, 0, 0, 0.6)',
-      padding: '4px 8px',
-      borderRadius: '4px'
-    },
-    sectionTitle: {
-      fontSize: '18px',
-      fontWeight: '600',
-      marginBottom: '16px',
-      marginTop: 0
-    },
-    label: {
-      display: 'block',
-      marginBottom: '8px',
-      fontSize: '14px',
-      fontWeight: '500'
-    },
-    slider: {
-      width: '100%',
-      height: '8px',
-      background: 'rgba(255, 255, 255, 0.2)',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      accentColor: '#a855f7'
-    },
-    presetButtons: {
-      display: 'flex',
-      gap: '8px',
-      marginTop: '8px'
-    },
-    presetBtn: {
-      flex: 1,
-      padding: '6px 12px',
-      background: 'rgba(168, 85, 247, 0.3)',
-      border: 'none',
-      borderRadius: '4px',
-      color: 'white',
-      cursor: 'pointer',
-      fontSize: '14px'
-    },
-    buttonGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(2, 1fr)',
-      gap: '8px',
-      marginBottom: '16px'
-    },
-    button: {
-      padding: '12px 16px',
-      border: 'none',
-      borderRadius: '8px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      fontSize: '14px',
-      transition: 'all 0.3s'
-    },
-    buttonStart: {
-      background: '#22c55e',
-      color: 'white'
-    },
-    buttonLoop: {
-      background: '#3b82f6',
-      color: 'white'
-    },
-    buttonLoopActive: {
-      background: '#f97316',
-      color: 'white'
-    },
-    buttonStop: {
-      background: '#ef4444',
-      color: 'white'
-    },
-    buttonReset: {
-      background: '#6b7280',
-      color: 'white'
-    },
-    dataGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(2, 1fr)',
-      gap: '12px'
-    },
-    dataCard: {
-      background: 'rgba(255, 255, 255, 0.05)',
-      borderRadius: '8px',
-      padding: '12px'
-    },
-    dataLabel: {
-      fontSize: '12px',
-      color: '#e9d5ff',
-      marginBottom: '4px'
-    },
-    dataValue: {
-      fontSize: '20px',
-      fontWeight: 'bold'
-    },
-    dataValueSmall: {
-      fontSize: '14px',
-      fontWeight: 'bold'
-    },
-    predictionRow: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      marginBottom: '8px',
-      fontSize: '14px'
-    },
-    predictionLabel: {
-      color: '#e9d5ff'
-    },
-    table: {
-      width: '100%',
-      fontSize: '14px',
-      borderCollapse: 'collapse',
-      overflowX: 'auto',
-      display: 'block'
-    },
-    tableInner: {
-      width: '100%',
-      display: 'table'
-    },
-    th: {
-      padding: '8px',
-      textAlign: 'left',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
-      fontSize: '12px'
-    },
-    td: {
-      padding: '8px',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-      fontSize: '12px'
-    },
-    errorHigh: {
-      color: '#f87171',
-      fontWeight: 'bold'
-    },
-    errorLow: {
-      color: '#4ade80',
-      fontWeight: 'bold'
-    },
-    noData: {
-      textAlign: 'center',
-      padding: '32px 0',
-      color: '#e9d5ff'
-    },
-    graphButton: {
-      width: '100%',
-      padding: '12px 16px',
-      background: 'rgba(59, 130, 246, 0.3)',
-      border: 'none',
-      borderRadius: '8px',
-      color: 'white',
-      fontWeight: '600',
-      cursor: 'pointer',
-      marginBottom: '8px'
-    },
-    completeButton: {
-      width: '100%',
-      padding: '12px 16px',
-      background: 'linear-gradient(to right, #a855f7, #ec4899)',
-      border: 'none',
-      borderRadius: '8px',
-      color: 'white',
-      fontWeight: 'bold',
-      cursor: 'pointer'
-    },
-    graphTabs: {
-      display: 'flex',
-      gap: '8px',
-      marginBottom: '16px'
-    },
-    graphTab: {
-      flex: 1,
-      padding: '8px 16px',
-      background: 'rgba(255, 255, 255, 0.1)',
-      border: 'none',
-      borderRadius: '8px',
-      color: 'white',
-      fontWeight: '600',
-      cursor: 'pointer'
-    },
-    graphTabActive: {
-      flex: 1,
-      padding: '8px 16px',
-      background: '#a855f7',
-      border: 'none',
-      borderRadius: '8px',
-      color: 'white',
-      fontWeight: '600',
-      cursor: 'pointer'
-    },
-    graphBox: {
-      position: 'relative',
-      height: '256px',
-      background: 'rgba(255, 255, 255, 0.05)',
-      borderRadius: '8px',
-      padding: '16px'
-    },
-    graphAxes: {
-      position: 'absolute',
-      top: '16px',
-      left: '16px',
-      right: '16px',
-      bottom: '16px',
-      borderLeft: '2px solid rgba(255, 255, 255, 0.3)',
-      borderBottom: '2px solid rgba(255, 255, 255, 0.3)'
-    },
-    graphPoint: {
-      position: 'absolute',
-      width: '12px',
-      height: '12px',
-      background: '#fbbf24',
-      border: '2px solid white',
-      borderRadius: '50%',
-      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
-    },
-    assessmentBox: {
-      background: 'rgba(255, 255, 255, 0.1)',
-      backdropFilter: 'blur(12px)',
-      borderRadius: '12px',
-      padding: '20px',
-      border: '2px solid #a855f7',
-      marginTop: '24px'
-    },
-    assessmentTitle: {
-      fontSize: '24px',
-      fontWeight: 'bold',
-      marginBottom: '16px',
-      marginTop: 0,
-      color: '#fbbf24',
-      textAlign: 'center'
-    },
-    assessmentIntro: {
-      background: 'rgba(168, 85, 247, 0.2)',
-      padding: '12px',
-      borderRadius: '8px',
-      marginBottom: '20px',
-      fontSize: '14px',
-      lineHeight: '1.6'
-    },
-    questionBox: {
-      background: 'rgba(255, 255, 255, 0.05)',
-      padding: '16px',
-      borderRadius: '8px',
-      marginBottom: '16px'
-    },
-    questionText: {
-      fontSize: '16px',
-      fontWeight: '600',
-      marginBottom: '12px',
-      color: '#e9d5ff'
-    },
-    optionLabel: {
-      display: 'block',
-      padding: '10px 12px',
-      background: 'rgba(255, 255, 255, 0.05)',
-      borderRadius: '6px',
-      marginBottom: '8px',
-      cursor: 'pointer',
-      transition: 'all 0.3s',
-      border: '2px solid transparent'
-    },
-    optionLabelSelected: {
-      background: 'rgba(168, 85, 247, 0.3)',
-      borderColor: '#a855f7'
-    },
-    radio: {
-      marginRight: '8px',
-      accentColor: '#a855f7'
-    },
-    input: {
-      width: '100%',
-      padding: '10px',
-      background: 'rgba(255, 255, 255, 0.1)',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
-      borderRadius: '6px',
-      color: 'white',
-      fontSize: '16px'
-    },
-    submitButton: {
-      width: '100%',
-      padding: '16px',
-      background: 'linear-gradient(to right, #22c55e, #16a34a)',
-      border: 'none',
-      borderRadius: '8px',
-      color: 'white',
-      fontWeight: 'bold',
-      fontSize: '16px',
-      cursor: 'pointer',
-      marginTop: '16px'
-    },
-    resultBox: {
-      background: 'rgba(255, 255, 255, 0.1)',
-      padding: '24px',
-      borderRadius: '12px',
-      textAlign: 'center',
-      marginTop: '16px'
-    },
-    scoreDisplay: {
-      fontSize: '48px',
-      fontWeight: 'bold',
-      marginBottom: '16px'
-    },
-    feedbackText: {
-      fontSize: '18px',
-      marginBottom: '8px'
-    },
-    retakeButton: {
-      padding: '12px 24px',
-      background: '#6b7280',
-      border: 'none',
-      borderRadius: '8px',
-      color: 'white',
-      fontWeight: '600',
-      cursor: 'pointer',
-      marginTop: '16px',
-      marginRight: '8px'
-    },
-    continueButton: {
-      padding: '12px 24px',
-      background: 'linear-gradient(to right, #a855f7, #ec4899)',
-      border: 'none',
-      borderRadius: '8px',
-      color: 'white',
-      fontWeight: '600',
-      cursor: 'pointer',
-      marginTop: '16px'
-    },
-    dataAnalyzerBox: {
-      background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2))',
-      backdropFilter: 'blur(12px)',
-      borderRadius: '12px',
-      padding: '20px',
-      border: '2px solid #fbbf24',
-      marginTop: '24px'
-    },
-    analyzerHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '16px',
-      flexWrap: 'wrap',
-      gap: '12px'
-    },
-    analyzerTitle: {
-      fontSize: '24px',
-      fontWeight: 'bold',
-      margin: 0,
-      color: '#fbbf24'
-    },
-    analyzerBadge: {
-      background: 'linear-gradient(to right, #fbbf24, #f59e0b)',
-      padding: '6px 12px',
-      borderRadius: '20px',
-      fontSize: '12px',
-      fontWeight: 'bold',
-      color: '#1e1b4b'
-    },
-    analyzerTabs: {
-      display: 'flex',
-      gap: '8px',
-      marginBottom: '16px',
-      flexWrap: 'wrap'
-    },
-    analyzerTab: {
-      flex: 1,
-      minWidth: '100px',
-      padding: '10px 16px',
-      background: 'rgba(255, 255, 255, 0.1)',
-      border: 'none',
-      borderRadius: '8px',
-      color: 'white',
-      fontWeight: '600',
-      cursor: 'pointer',
-      fontSize: '14px'
-    },
-    analyzerTabActive: {
-      flex: 1,
-      minWidth: '100px',
-      padding: '10px 16px',
-      background: '#fbbf24',
-      border: 'none',
-      borderRadius: '8px',
-      color: '#1e1b4b',
-      fontWeight: '600',
-      cursor: 'pointer',
-      fontSize: '14px'
-    },
-    statCard: {
-      background: 'rgba(255, 255, 255, 0.1)',
-      padding: '16px',
-      borderRadius: '8px',
-      marginBottom: '12px'
-    },
-    statLabel: {
-      fontSize: '12px',
-      color: '#e9d5ff',
-      marginBottom: '4px'
-    },
-    statValue: {
-      fontSize: '24px',
-      fontWeight: 'bold',
-      color: '#fbbf24'
-    },
-    statUnit: {
-      fontSize: '14px',
-      color: '#d1d5db',
-      marginLeft: '4px'
-    },
-    compareGrid: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '12px'
-    },
-    trialCard: {
-      background: 'rgba(255, 255, 255, 0.1)',
-      padding: '12px',
-      borderRadius: '8px',
-      border: '2px solid transparent'
-    },
-    trialCardBest: {
-      background: 'rgba(74, 222, 128, 0.2)',
-      padding: '12px',
-      borderRadius: '8px',
-      border: '2px solid #4ade80'
-    },
-    trialCardWorst: {
-      background: 'rgba(248, 113, 113, 0.2)',
-      padding: '12px',
-      borderRadius: '8px',
-      border: '2px solid #f87171'
-    },
-    calculatorInput: {
-      width: '100%',
-      padding: '12px',
-      background: 'rgba(255, 255, 255, 0.1)',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
-      borderRadius: '8px',
-      color: 'white',
-      fontSize: '16px',
-      marginBottom: '12px'
-    },
-    calculateBtn: {
-      width: '100%',
-      padding: '12px',
-      background: '#fbbf24',
-      border: 'none',
-      borderRadius: '8px',
-      color: '#1e1b4b',
-      fontWeight: 'bold',
-      cursor: 'pointer'
-    }
+  // FIXED: Created a separate function for styles to avoid large object in render
+  const getStyles = () => {
+    return {
+      container: {
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1e1b4b 0%, #581c87 50%, #1e1b4b 100%)',
+        color: 'white',
+        padding: '16px',
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+      },
+      header: {
+        marginBottom: '24px'
+      },
+      backButton: {
+        marginBottom: '12px',
+        padding: '8px 16px',
+        background: 'rgba(255, 255, 255, 0.1)',
+        border: 'none',
+        borderRadius: '8px',
+        color: 'white',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        fontSize: '14px'
+      },
+      title: {
+        fontSize: '28px',
+        fontWeight: 'bold',
+        marginBottom: '8px',
+        margin: 0
+      },
+      subtitle: {
+        color: '#e9d5ff',
+        fontSize: '14px',
+        margin: 0
+      },
+      section: {
+        background: 'rgba(255, 255, 255, 0.05)',
+        backdropFilter: 'blur(12px)',
+        borderRadius: '12px',
+        padding: '16px',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        marginBottom: '24px'
+      },
+      simulationBox: {
+        position: 'relative',
+        height: '550px',
+        overflow: 'visible',
+        borderRadius: '8px',
+        background: 'linear-gradient(to bottom, rgba(12, 74, 110, 0.2), rgba(20, 83, 45, 0.2))'
+      },
+      ground: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: '64px',
+        background: 'linear-gradient(to top, #374151, #4b5563)'
+      },
+      rampContainer: {
+        position: 'absolute',
+        top: '32px',
+        left: '32px',
+        zIndex: 2,
+        transformOrigin: 'left top'
+      },
+      ramp: {
+        width: `${rampLengthPixels}px`,
+        height: '16px',
+        transform: `rotate(${rampAngle}deg)`,
+        transformOrigin: 'left top'
+      },
+      rampSurface: {
+        width: '100%',
+        height: '100%',
+        background: 'linear-gradient(to right, #a855f7, #60a5fa)',
+        borderRadius: '0 8px 8px 0',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+        position: 'relative'
+      },
+      rampSupport: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '4px',
+        height: `${(actualHeight / 100) * PIXELS_PER_METER}px`,
+        background: '#9333ea',
+        transform: 'translateY(-100%) rotate(0deg)'
+      },
+      can: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '40px',
+        height: '40px',
+        borderRadius: '50%',
+        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+        zIndex: 10,
+        transition: 'none',
+        willChange: 'transform',
+        filter: 'drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4))',
+        transform: 'translate(32px, 32px) rotate(0deg)',
+        transformOrigin: 'center center',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: '14px',
+        border: '2px solid #92400e',
+        boxShadow: 'inset 0 0 8px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.3)'
+      },
+      canLabel: {
+        pointerEvents: 'none',
+        userSelect: 'none'
+      },
+      marker: {
+        position: 'absolute',
+        background: 'rgba(255, 255, 255, 0.9)',
+        color: '#581c87',
+        padding: '4px 12px',
+        borderRadius: '4px',
+        fontSize: '11px',
+        fontWeight: 'bold'
+      },
+      distanceMarker: {
+        position: 'absolute',
+        background: 'rgba(255, 255, 255, 0.7)',
+        color: '#1e1b4b',
+        padding: '2px 6px',
+        borderRadius: '3px',
+        fontSize: '10px',
+        fontWeight: 'bold',
+        border: '1px solid rgba(0, 0, 0, 0.2)',
+        transform: `rotate(${-rampAngle}deg)`
+      },
+      angleDisplay: {
+        position: 'absolute',
+        top: '80px',
+        left: '16px',
+        fontSize: '12px',
+        background: 'rgba(0, 0, 0, 0.6)',
+        padding: '4px 8px',
+        borderRadius: '4px'
+      },
+      sectionTitle: {
+        fontSize: '18px',
+        fontWeight: '600',
+        marginBottom: '16px',
+        marginTop: 0
+      },
+      label: {
+        display: 'block',
+        marginBottom: '8px',
+        fontSize: '14px',
+        fontWeight: '500'
+      },
+      slider: {
+        width: '100%',
+        height: '8px',
+        background: 'rgba(255, 255, 255, 0.2)',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        accentColor: '#a855f7'
+      },
+      presetButtons: {
+        display: 'flex',
+        gap: '8px',
+        marginTop: '8px'
+      },
+      presetBtn: {
+        flex: 1,
+        padding: '6px 12px',
+        background: 'rgba(168, 85, 247, 0.3)',
+        border: 'none',
+        borderRadius: '4px',
+        color: 'white',
+        cursor: 'pointer',
+        fontSize: '14px'
+      },
+      buttonGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '8px',
+        marginBottom: '16px'
+      },
+      button: {
+        padding: '12px 16px',
+        border: 'none',
+        borderRadius: '8px',
+        fontWeight: '600',
+        cursor: 'pointer',
+        fontSize: '14px',
+        transition: 'all 0.3s'
+      },
+      buttonStart: {
+        background: '#22c55e',
+        color: 'white'
+      },
+      buttonLoop: {
+        background: '#3b82f6',
+        color: 'white'
+      },
+      buttonLoopActive: {
+        background: '#f97316',
+        color: 'white'
+      },
+      buttonStop: {
+        background: '#ef4444',
+        color: 'white'
+      },
+      buttonReset: {
+        background: '#6b7280',
+        color: 'white'
+      },
+      dataGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '12px'
+      },
+      dataCard: {
+        background: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: '8px',
+        padding: '12px'
+      },
+      dataLabel: {
+        fontSize: '12px',
+        color: '#e9d5ff',
+        marginBottom: '4px'
+      },
+      dataValue: {
+        fontSize: '20px',
+        fontWeight: 'bold'
+      },
+      dataValueSmall: {
+        fontSize: '14px',
+        fontWeight: 'bold'
+      },
+      predictionRow: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginBottom: '8px',
+        fontSize: '14px'
+      },
+      predictionLabel: {
+        color: '#e9d5ff'
+      },
+      table: {
+        width: '100%',
+        fontSize: '14px',
+        borderCollapse: 'collapse',
+        overflowX: 'auto',
+        display: 'block'
+      },
+      tableInner: {
+        width: '100%',
+        display: 'table'
+      },
+      th: {
+        padding: '8px',
+        textAlign: 'left',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+        fontSize: '12px'
+      },
+      td: {
+        padding: '8px',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        fontSize: '12px'
+      },
+      errorHigh: {
+        color: '#f87171',
+        fontWeight: 'bold'
+      },
+      errorLow: {
+        color: '#4ade80',
+        fontWeight: 'bold'
+      },
+      noData: {
+        textAlign: 'center',
+        padding: '32px 0',
+        color: '#e9d5ff'
+      },
+      graphButton: {
+        width: '100%',
+        padding: '12px 16px',
+        background: 'rgba(59, 130, 246, 0.3)',
+        border: 'none',
+        borderRadius: '8px',
+        color: 'white',
+        fontWeight: '600',
+        cursor: 'pointer',
+        marginBottom: '8px'
+      },
+      completeButton: {
+        width: '100%',
+        padding: '12px 16px',
+        background: 'linear-gradient(to right, #a855f7, #ec4899)',
+        border: 'none',
+        borderRadius: '8px',
+        color: 'white',
+        fontWeight: 'bold',
+        cursor: 'pointer'
+      },
+      graphTabs: {
+        display: 'flex',
+        gap: '8px',
+        marginBottom: '16px'
+      },
+      graphTab: {
+        flex: 1,
+        padding: '8px 16px',
+        background: 'rgba(255, 255, 255, 0.1)',
+        border: 'none',
+        borderRadius: '8px',
+        color: 'white',
+        fontWeight: '600',
+        cursor: 'pointer'
+      },
+      graphTabActive: {
+        flex: 1,
+        padding: '8px 16px',
+        background: '#a855f7',
+        border: 'none',
+        borderRadius: '8px',
+        color: 'white',
+        fontWeight: '600',
+        cursor: 'pointer'
+      },
+      graphBox: {
+        position: 'relative',
+        height: '256px',
+        background: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: '8px',
+        padding: '16px'
+      },
+      graphAxes: {
+        position: 'absolute',
+        top: '16px',
+        left: '16px',
+        right: '16px',
+        bottom: '16px',
+        borderLeft: '2px solid rgba(255, 255, 255, 0.3)',
+        borderBottom: '2px solid rgba(255, 255, 255, 0.3)'
+      },
+      graphPoint: {
+        position: 'absolute',
+        width: '12px',
+        height: '12px',
+        background: '#fbbf24',
+        border: '2px solid white',
+        borderRadius: '50%',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+      },
+      assessmentBox: {
+        background: 'rgba(255, 255, 255, 0.1)',
+        backdropFilter: 'blur(12px)',
+        borderRadius: '12px',
+        padding: '20px',
+        border: '2px solid #a855f7',
+        marginTop: '24px'
+      },
+      assessmentTitle: {
+        fontSize: '24px',
+        fontWeight: 'bold',
+        marginBottom: '16px',
+        marginTop: 0,
+        color: '#fbbf24',
+        textAlign: 'center'
+      },
+      assessmentIntro: {
+        background: 'rgba(168, 85, 247, 0.2)',
+        padding: '12px',
+        borderRadius: '8px',
+        marginBottom: '20px',
+        fontSize: '14px',
+        lineHeight: '1.6'
+      },
+      questionBox: {
+        background: 'rgba(255, 255, 255, 0.05)',
+        padding: '16px',
+        borderRadius: '8px',
+        marginBottom: '16px'
+      },
+      questionText: {
+        fontSize: '16px',
+        fontWeight: '600',
+        marginBottom: '12px',
+        color: '#e9d5ff'
+      },
+      optionLabel: {
+        display: 'block',
+        padding: '10px 12px',
+        background: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: '6px',
+        marginBottom: '8px',
+        cursor: 'pointer',
+        transition: 'all 0.3s',
+        border: '2px solid transparent'
+      },
+      optionLabelSelected: {
+        background: 'rgba(168, 85, 247, 0.3)',
+        borderColor: '#a855f7'
+      },
+      radio: {
+        marginRight: '8px',
+        accentColor: '#a855f7'
+      },
+      input: {
+        width: '100%',
+        padding: '10px',
+        background: 'rgba(255, 255, 255, 0.1)',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        borderRadius: '6px',
+        color: 'white',
+        fontSize: '16px'
+      },
+      submitButton: {
+        width: '100%',
+        padding: '16px',
+        background: 'linear-gradient(to right, #22c55e, #16a34a)',
+        border: 'none',
+        borderRadius: '8px',
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: '16px',
+        cursor: 'pointer',
+        marginTop: '16px'
+      },
+      resultBox: {
+        background: 'rgba(255, 255, 255, 0.1)',
+        padding: '24px',
+        borderRadius: '12px',
+        textAlign: 'center',
+        marginTop: '16px'
+      },
+      scoreDisplay: {
+        fontSize: '48px',
+        fontWeight: 'bold',
+        marginBottom: '16px'
+      },
+      feedbackText: {
+        fontSize: '18px',
+        marginBottom: '8px'
+      },
+      retakeButton: {
+        padding: '12px 24px',
+        background: '#6b7280',
+        border: 'none',
+        borderRadius: '8px',
+        color: 'white',
+        fontWeight: '600',
+        cursor: 'pointer',
+        marginTop: '16px',
+        marginRight: '8px'
+      },
+      continueButton: {
+        padding: '12px 24px',
+        background: 'linear-gradient(to right, #a855f7, #ec4899)',
+        border: 'none',
+        borderRadius: '8px',
+        color: 'white',
+        fontWeight: '600',
+        cursor: 'pointer',
+        marginTop: '16px'
+      },
+      dataAnalyzerBox: {
+        background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2))',
+        backdropFilter: 'blur(12px)',
+        borderRadius: '12px',
+        padding: '20px',
+        border: '2px solid #fbbf24',
+        marginTop: '24px'
+      },
+      analyzerHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '16px',
+        flexWrap: 'wrap',
+        gap: '12px'
+      },
+      analyzerTitle: {
+        fontSize: '24px',
+        fontWeight: 'bold',
+        margin: 0,
+        color: '#fbbf24'
+      },
+      analyzerBadge: {
+        background: 'linear-gradient(to right, #fbbf24, #f59e0b)',
+        padding: '6px 12px',
+        borderRadius: '20px',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        color: '#1e1b4b'
+      },
+      analyzerTabs: {
+        display: 'flex',
+        gap: '8px',
+        marginBottom: '16px',
+        flexWrap: 'wrap'
+      },
+      analyzerTab: {
+        flex: 1,
+        minWidth: '100px',
+        padding: '10px 16px',
+        background: 'rgba(255, 255, 255, 0.1)',
+        border: 'none',
+        borderRadius: '8px',
+        color: 'white',
+        fontWeight: '600',
+        cursor: 'pointer',
+        fontSize: '14px'
+      },
+      analyzerTabActive: {
+        flex: 1,
+        minWidth: '100px',
+        padding: '10px 16px',
+        background: '#fbbf24',
+        border: 'none',
+        borderRadius: '8px',
+        color: '#1e1b4b',
+        fontWeight: '600',
+        cursor: 'pointer',
+        fontSize: '14px'
+      },
+      statCard: {
+        background: 'rgba(255, 255, 255, 0.1)',
+        padding: '16px',
+        borderRadius: '8px',
+        marginBottom: '12px'
+      },
+      statLabel: {
+        fontSize: '12px',
+        color: '#e9d5ff',
+        marginBottom: '4px'
+      },
+      statValue: {
+        fontSize: '24px',
+        fontWeight: 'bold',
+        color: '#fbbf24'
+      },
+      statUnit: {
+        fontSize: '14px',
+        color: '#d1d5db',
+        marginLeft: '4px'
+      },
+      compareGrid: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '12px'
+      },
+      trialCard: {
+        background: 'rgba(255, 255, 255, 0.1)',
+        padding: '12px',
+        borderRadius: '8px',
+        border: '2px solid transparent'
+      },
+      trialCardBest: {
+        background: 'rgba(74, 222, 128, 0.2)',
+        padding: '12px',
+        borderRadius: '8px',
+        border: '2px solid #4ade80'
+      },
+      trialCardWorst: {
+        background: 'rgba(248, 113, 113, 0.2)',
+        padding: '12px',
+        borderRadius: '8px',
+        border: '2px solid #f87171'
+      },
+      calculatorInput: {
+        width: '100%',
+        padding: '12px',
+        background: 'rgba(255, 255, 255, 0.1)',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        borderRadius: '8px',
+        color: 'white',
+        fontSize: '16px',
+        marginBottom: '12px'
+      },
+      calculateBtn: {
+        width: '100%',
+        padding: '12px',
+        background: '#fbbf24',
+        border: 'none',
+        borderRadius: '8px',
+        color: '#1e1b4b',
+        fontWeight: 'bold',
+        cursor: 'pointer'
+      }
+    };
   };
 
 
@@ -1273,6 +1276,8 @@ const SlopesOfAcceleration = ({ onComplete, navigate }) => {
       </>
     );
   };
+
+  const styles = getStyles(); // Get styles object
 
   return (
     <div style={styles.container}>
